@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
+    const blockedNames = ['sreedev', 'zhinsu'];
 
     // Retrieve top 20 from sorted set 'leaderboard' descending
     const rawResult = await kv.zrange('leaderboard', 0, 19, { rev: true, withScores: true });
