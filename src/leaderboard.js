@@ -115,6 +115,14 @@ class LeaderboardManager {
       list[xIdx].score = 88;
     }
 
+    // Ensure Dingan score 45
+    const dIdx = list.findIndex(item => item.name.toLowerCase() === 'dingan');
+    if (dIdx < 0) {
+      list.push({ name: 'Dingan', score: 45 });
+    } else if (list[dIdx].score < 45) {
+      list[dIdx].score = 45;
+    }
+
     list.sort((a, b) => b.score - a.score);
     return list;
   }

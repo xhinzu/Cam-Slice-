@@ -29,11 +29,15 @@ export default async function handler(req, res) {
   try {
     const blockedNames = ['sreedev', 'zhinsu'];
 
-    // Ensure Xhinzu has score 88 in KV if missing or lower
+    // Ensure Xhinzu (88) & Dingan (45) in KV if missing or lower
     try {
       const xScore = await kv.zscore('leaderboard', 'Xhinzu');
       if (xScore === null || Number(xScore) < 88) {
         await kv.zadd('leaderboard', { score: 88, member: 'Xhinzu' });
+      }
+      const dScore = await kv.zscore('leaderboard', 'Dingan');
+      if (dScore === null || Number(dScore) < 45) {
+        await kv.zadd('leaderboard', { score: 45, member: 'Dingan' });
       }
     } catch (e) {
       // ignore KV write errors
@@ -83,6 +87,18 @@ export default async function handler(req, res) {
       formattedList.forEach(item => {
         if (item.name.toLowerCase() === 'xhinzu' && item.score < 88) {
           item.score = 88;
+        }
+      });
+    }
+
+    // Ensure Dingan is present with score 45 if not already in list
+    const hasDingan = formattedList.some(item => item.name.toLowerCase() === 'dingan');
+    if (!hasDingan) {
+      formattedList.push({ name: 'Dingan', score: 45 });
+    } else {
+      formattedList.forEach(item => {
+        if (item.name.toLowerCase() === 'dingan' && item.score < 45) {
+          item.score = 45;
         }
       });
     }
