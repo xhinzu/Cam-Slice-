@@ -41,10 +41,10 @@ export class HandTrackerManager {
         delegate: 'GPU'
       },
       runningMode: 'VIDEO',
-      numHands: 2,
-      minHandDetectionConfidence: 0.3,
-      minHandPresenceConfidence: 0.3,
-      minTrackingConfidence: 0.3
+      numHands: 1,
+      minHandDetectionConfidence: 0.4,
+      minHandPresenceConfidence: 0.4,
+      minTrackingConfidence: 0.4
     });
 
     this.isLoaded = true;
@@ -52,31 +52,25 @@ export class HandTrackerManager {
   }
 
   /**
-   * Process a single video frame and return blade motion data.
+   * Process a single video frame and return blade motion data with ZERO input latency.
    */
   detectHands(videoElement, timestamp, canvasWidth, canvasHeight) {
     if (!this.isLoaded || !this.handLandmarker || !videoElement || videoElement.videoWidth === 0) {
       return { activeBladeSegments: [], handsTracked: 0 };
     }
 
-    // Skip inference if video frame hasn't advanced (saves up to 60% CPU/GPU overhead on high refresh rate displays)
-    if (videoElement.currentTime === this.lastVideoTime) {
-      return this.lastDetectionResult;
-    }
-    this.lastVideoTime = videoElement.currentTime;
-
-    const results = this.handLandmarker.detectForVideo(videoElement, timestamp);
+    const results = this.handLandmarker.detectForVideo(videoElement, performance.now());
     const activeBladeSegments = [];
     const activeHandIds = new Set();
 
     if (results.landmarks && results.landmarks.length > 0) {
       results.landmarks.forEach((handLandmarks, handIndex) => {
-        // Track Index Fingertip (8), Index DIP (7), Index PIP (6), and Middle Fingertip (12)
+        // Track Index Fingertip (8) and Index DIP (7)
         const indexTip = handLandmarks[8];
         const indexDip = handLandmarks[7];
         if (!indexTip) return;
 
-        // Convert coordinates to horizontally mirrored canvas space
+        // Convert coordinates to horizontally mirrored canvas space with instant 1:1 tracking
         const rawX = (1 - indexTip.x) * canvasWidth;
         const rawY = indexTip.y * canvasHeight;
         
@@ -90,12 +84,12 @@ export class HandTrackerManager {
         const handKey = `hand_${handIndex}`;
         activeHandIds.add(handKey);
 
-        // Exponential smoothing (EMA) to eliminate jitter while keeping ultra-low latency
+        // Instant 1:1 direct positioning with ultra-responsive micro-smoothing (0.95 alpha = zero drag delay)
         let smoothX = rawX;
         let smoothY = rawY;
         if (this.smoothedPositions.has(handKey)) {
           const prev = this.smoothedPositions.get(handKey);
-          const alpha = 0.75; // 75% raw, 25% previous
+          const alpha = 0.95;
           smoothX = alpha * rawX + (1 - alpha) * prev.x;
           smoothY = alpha * rawY + (1 - alpha) * prev.y;
         }

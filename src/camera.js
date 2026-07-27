@@ -21,8 +21,9 @@ export class CameraManager {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 60, min: 30 },
           facingMode: 'user'
         },
         audio: false
