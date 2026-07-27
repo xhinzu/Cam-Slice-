@@ -29,6 +29,16 @@ export default async function handler(req, res) {
   try {
     const blockedNames = ['sreedev', 'zhinsu'];
 
+    // Ensure Xhinzu has score 88 in KV if missing or lower
+    try {
+      const xScore = await kv.zscore('leaderboard', 'Xhinzu');
+      if (xScore === null || Number(xScore) < 88) {
+        await kv.zadd('leaderboard', { score: 88, member: 'Xhinzu' });
+      }
+    } catch (e) {
+      // ignore KV write errors
+    }
+
     // Retrieve top 20 from sorted set 'leaderboard' descending
     const rawResult = await kv.zrange('leaderboard', 0, 19, { rev: true, withScores: true });
 
@@ -64,6 +74,20 @@ export default async function handler(req, res) {
         }
       }
     }
+
+    // Ensure Xhinzu is present with score 88 if not already in list
+    const hasXhinzu = formattedList.some(item => item.name.toLowerCase() === 'xhinzu');
+    if (!hasXhinzu) {
+      formattedList.push({ name: 'Xhinzu', score: 88 });
+    } else {
+      formattedList.forEach(item => {
+        if (item.name.toLowerCase() === 'xhinzu' && item.score < 88) {
+          item.score = 88;
+        }
+      });
+    }
+
+    formattedList.sort((a, b) => b.score - a.score);
 
     return res.status(200).json(formattedList.slice(0, 10));
   } catch (error) {

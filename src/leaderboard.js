@@ -89,27 +89,34 @@ class LeaderboardManager {
 
   getLocalLeaderboard() {
     const stored = localStorage.getItem(this.localLeaderboardKey);
+    let list = [];
     if (stored) {
       try {
-        const list = JSON.parse(stored);
-        if (Array.isArray(list)) {
-          // Filter out legacy demo mock names & deleted names
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
           const demoNames = ['MasterNinja', 'BladeRunner', 'FruitSlayer', 'ZenSlicer', 'SamuraiJack', 'ShadowHand', 'SpeedDemon', 'SlashKing', 'ChopChop', 'RookieBlade'];
           const blockedNames = ['sreedev', 'zhinsu'];
-          const cleanList = list.filter(item => {
+          list = parsed.filter(item => {
             if (!item || !item.name) return false;
             const lower = item.name.toLowerCase();
             return !demoNames.includes(item.name) && !blockedNames.includes(lower);
           });
-          return cleanList;
         }
       } catch (e) {
-        // Fallback empty list
+        list = [];
       }
     }
 
-    // Only actual player scores are stored (starts empty)
-    return [];
+    // Ensure Xhinzu score 88
+    const xIdx = list.findIndex(item => item.name.toLowerCase() === 'xhinzu');
+    if (xIdx < 0) {
+      list.push({ name: 'Xhinzu', score: 88 });
+    } else if (list[xIdx].score < 88) {
+      list[xIdx].score = 88;
+    }
+
+    list.sort((a, b) => b.score - a.score);
+    return list;
   }
 
   updateLocalLeaderboard(name, score) {
