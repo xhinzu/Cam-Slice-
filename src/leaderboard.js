@@ -85,28 +85,20 @@ class LeaderboardManager {
     const stored = localStorage.getItem(this.localLeaderboardKey);
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          // Filter out legacy demo mock names if present
+          const demoNames = ['MasterNinja', 'BladeRunner', 'FruitSlayer', 'ZenSlicer', 'SamuraiJack', 'ShadowHand', 'SpeedDemon', 'SlashKing', 'ChopChop', 'RookieBlade'];
+          const cleanList = list.filter(item => item && item.name && !demoNames.includes(item.name));
+          return cleanList;
+        }
       } catch (e) {
-        // Fallback default mock data
+        // Fallback empty list
       }
     }
 
-    // Default mock slicer leaderboard for instant UI preview
-    const defaultLB = [
-      { name: 'MasterNinja', score: 84 },
-      { name: 'BladeRunner', score: 65 },
-      { name: 'FruitSlayer', score: 52 },
-      { name: 'ZenSlicer', score: 41 },
-      { name: 'SamuraiJack', score: 33 },
-      { name: 'ShadowHand', score: 28 },
-      { name: 'SpeedDemon', score: 22 },
-      { name: 'SlashKing', score: 18 },
-      { name: 'ChopChop', score: 12 },
-      { name: 'RookieBlade', score: 5 }
-    ];
-
-    localStorage.setItem(this.localLeaderboardKey, JSON.stringify(defaultLB));
-    return defaultLB;
+    // Only actual player scores are stored (starts empty)
+    return [];
   }
 
   updateLocalLeaderboard(name, score) {

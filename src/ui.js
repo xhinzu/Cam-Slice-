@@ -156,7 +156,7 @@ export class UIManager {
 
   renderLeaderboard(scoresList, activePlayerName = '') {
     if (!scoresList || scoresList.length === 0) {
-      this.leaderboardListEl.innerHTML = '<div class="lb-loading">No scores recorded yet</div>';
+      this.leaderboardListEl.innerHTML = '<div class="lb-loading">No scores recorded yet. Be the first! 🏆</div>';
       return;
     }
 
