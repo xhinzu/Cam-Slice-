@@ -9,6 +9,7 @@ export class UIManager {
     this.loadingModal = document.getElementById('loading-modal');
     this.loadingStatus = document.getElementById('loading-status');
     this.nameModal = document.getElementById('name-modal');
+    this.tutorialModal = document.getElementById('tutorial-modal');
     this.levelModal = document.getElementById('level-modal');
     this.gameoverModal = document.getElementById('gameover-modal');
     this.cameraErrorModal = document.getElementById('camera-error-modal');
@@ -26,6 +27,8 @@ export class UIManager {
     this.nameForm = document.getElementById('name-form');
     this.nameInput = document.getElementById('player-name-input');
     this.slicerNameTag = document.getElementById('slicer-name-tag');
+    this.understandBtn = document.getElementById('understand-btn');
+    this.viewTutorialBtn = document.getElementById('view-tutorial-btn');
     this.startGameBtn = document.getElementById('start-game-btn');
     this.changeNameBtn = document.getElementById('change-name-btn');
     this.restartBtn = document.getElementById('restart-btn');
@@ -64,6 +67,13 @@ export class UIManager {
       this.nameInput.value = saved;
     }
     this.nameModal.classList.remove('hidden');
+  }
+
+  showTutorial() {
+    this.hideAllModals();
+    if (this.tutorialModal) {
+      this.tutorialModal.classList.remove('hidden');
+    }
   }
 
   showLevelSelect(currentLevel = 'medium') {
@@ -107,6 +117,7 @@ export class UIManager {
   hideAllModals() {
     this.loadingModal.classList.add('hidden');
     this.nameModal.classList.add('hidden');
+    if (this.tutorialModal) this.tutorialModal.classList.add('hidden');
     this.levelModal.classList.add('hidden');
     this.gameoverModal.classList.add('hidden');
     this.cameraErrorModal.classList.add('hidden');

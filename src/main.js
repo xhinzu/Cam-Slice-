@@ -67,19 +67,33 @@ class AppController {
   }
 
   bindEvents() {
-    // Name Entry Form submit
+    // Name Entry Form submit -> proceed to Tutorial
     this.ui.nameForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const inputVal = this.ui.nameInput.value.trim();
       if (inputVal) {
         this.ui.setPlayerName(inputVal);
-        this.ui.showLevelSelect(this.selectedLevel);
+        this.ui.showTutorial();
         // Refresh leaderboard active player highlight
         leaderboard.subscribeTopScores((scores) => {
           this.ui.renderLeaderboard(scores, inputVal);
         });
       }
     });
+
+    // "I Understand" Button on Tutorial Modal
+    if (this.ui.understandBtn) {
+      this.ui.understandBtn.addEventListener('click', () => {
+        this.ui.showLevelSelect(this.selectedLevel);
+      });
+    }
+
+    // "How to Play" Button on Level Select Modal
+    if (this.ui.viewTutorialBtn) {
+      this.ui.viewTutorialBtn.addEventListener('click', () => {
+        this.ui.showTutorial();
+      });
+    }
 
     // Level selection cards
     this.ui.levelBtns.forEach(btn => {

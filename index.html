@@ -74,8 +74,80 @@
           <div class="input-group">
             <input type="text" id="player-name-input" placeholder="Ninja Slicer Name..." maxlength="15" required autocomplete="off">
           </div>
-          <button type="submit" class="btn btn-primary btn-glow">Continue to Arena ➔</button>
+          <button type="submit" class="btn btn-primary btn-glow">Continue to Tutorial ➔</button>
         </form>
+      </div>
+    </div>
+
+    <!-- How to Play / Tutorial Modal -->
+    <div id="tutorial-modal" class="modal-overlay hidden">
+      <div class="modal-card tutorial-card glass-panel glow-border">
+        <div class="logo-badge">🥷 NINJA TRAINING</div>
+        <h2>How to Play</h2>
+        <p class="tutorial-subhead">Master your camera & blade before entering the arena!</p>
+        
+        <div class="steps-grid">
+          <!-- Step 1: Camera Distance -->
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <div class="step-anim anim-distance">
+              <div class="cam-icon">📷</div>
+              <div class="user-silhouette">👤</div>
+              <div class="dist-beam"></div>
+              <div class="check-badge">1 - 3 ft</div>
+            </div>
+            <div class="step-text">
+              <strong>Camera Distance</strong>
+              <span>Keep your camera at a good distance so your hand is visible.</span>
+            </div>
+          </div>
+
+          <!-- Step 2: Index Finger Only -->
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <div class="step-anim anim-finger">
+              <div class="hand-icon">👆</div>
+              <div class="blade-spark">⚡</div>
+              <div class="finger-glow"></div>
+            </div>
+            <div class="step-text">
+              <strong>Point Index Finger</strong>
+              <span>Fold all other fingers except your index finger.</span>
+            </div>
+          </div>
+
+          <!-- Step 3: Good Lighting -->
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <div class="step-anim anim-lighting">
+              <div class="bulb-icon">💡</div>
+              <div class="light-ray"></div>
+            </div>
+            <div class="step-text">
+              <strong>Good Lighting</strong>
+              <span>Play in good lighting for precise hand tracking.</span>
+            </div>
+          </div>
+
+          <!-- Step 4: Slice Fruits -->
+          <div class="step-card">
+            <div class="step-number">4</div>
+            <div class="step-anim anim-slicing">
+              <div class="demo-fruit">🍉</div>
+              <div class="demo-slash"></div>
+              <div class="demo-fruit-half left">🍉</div>
+              <div class="demo-fruit-half right">🍉</div>
+            </div>
+            <div class="step-text">
+              <strong>Slice Fruits</strong>
+              <span>Move your finger to slice falling fruits in real-time!</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="understand-btn" class="btn btn-primary btn-large btn-glow">
+          👍 I Understand
+        </button>
       </div>
     </div>
 
@@ -107,7 +179,10 @@
 
         <div class="modal-actions">
           <button id="start-game-btn" class="btn btn-primary btn-large btn-glow">🗡️ START SLICING</button>
-          <button id="change-name-btn" class="btn btn-secondary">Edit Name</button>
+          <div class="secondary-btn-row">
+            <button id="view-tutorial-btn" class="btn btn-secondary">📖 How to Play</button>
+            <button id="change-name-btn" class="btn btn-secondary">Edit Name</button>
+          </div>
         </div>
       </div>
     </div>

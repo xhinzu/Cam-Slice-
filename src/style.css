@@ -589,3 +589,291 @@ html, body {
   gap: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+.secondary-btn-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.secondary-btn-row .btn {
+  flex: 1;
+}
+
+/* ==========================================================================
+   Tutorial Modal & Step Animations
+   ========================================================================== */
+.tutorial-card {
+  max-width: 620px;
+  padding: 28px 24px;
+}
+
+.tutorial-subhead {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  margin-top: -12px;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+  margin: 6px 0;
+}
+
+@media (max-width: 540px) {
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.step-card:hover {
+  border-color: rgba(0, 242, 254, 0.4);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.step-number {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 22px;
+  height: 22px;
+  background: var(--color-blade-neon);
+  color: #05070c;
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+  z-index: 5;
+}
+
+.step-anim {
+  width: 100%;
+  height: 75px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+
+.step-text strong {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.step-text span {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+/* Step 1 Animation: Camera Distance */
+.anim-distance .cam-icon {
+  font-size: 1.6rem;
+  position: absolute;
+  left: 20px;
+}
+
+.anim-distance .user-silhouette {
+  font-size: 1.6rem;
+  position: absolute;
+  right: 20px;
+  animation: moveSilhouette 2.5s infinite ease-in-out;
+}
+
+@keyframes moveSilhouette {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-14px); }
+}
+
+.anim-distance .dist-beam {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-blade-neon), transparent);
+  width: 45%;
+  top: 50%;
+  left: 45px;
+  animation: scanBeam 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes scanBeam {
+  0% { opacity: 0.2; width: 25%; }
+  100% { opacity: 1; width: 50%; box-shadow: 0 0 8px var(--color-blade-neon); }
+}
+
+.anim-distance .check-badge {
+  font-size: 0.65rem;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  background: rgba(46, 213, 115, 0.2);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  padding: 2px 6px;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 6px;
+}
+
+/* Step 2 Animation: Index Finger Only */
+.anim-finger .hand-icon {
+  font-size: 2.2rem;
+  animation: fingerPoint 1.8s infinite ease-in-out;
+}
+
+@keyframes fingerPoint {
+  0%, 100% { transform: translateY(2px) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-5deg); }
+}
+
+.anim-finger .finger-glow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--color-blade-neon);
+  border-radius: 50%;
+  top: 12px;
+  left: calc(50% - 7px);
+  filter: blur(2px);
+  box-shadow: 0 0 12px var(--color-blade-neon), 0 0 20px var(--color-blade-neon);
+  animation: pulseGlow 1.2s infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+.anim-finger .blade-spark {
+  position: absolute;
+  top: 8px;
+  right: 25%;
+  font-size: 1rem;
+  animation: sparkSlash 1.8s infinite;
+}
+
+@keyframes sparkSlash {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  40%, 60% { opacity: 1; transform: scale(1.3) rotate(20deg); }
+}
+
+/* Step 3 Animation: Good Lighting */
+.anim-lighting .bulb-icon {
+  font-size: 2.2rem;
+  z-index: 2;
+  animation: bulbGlow 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes bulbGlow {
+  0% { filter: drop-shadow(0 0 2px rgba(255, 165, 2, 0.3)); transform: scale(0.95); }
+  100% { filter: drop-shadow(0 0 18px rgba(255, 165, 2, 0.95)); transform: scale(1.1); }
+}
+
+.anim-lighting .light-ray {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 165, 2, 0.4) 0%, transparent 70%);
+  animation: rayExpand 2s infinite ease-out;
+}
+
+@keyframes rayExpand {
+  0% { transform: scale(0.3); opacity: 1; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Step 4 Animation: Slice Fruits */
+.anim-slicing {
+  position: relative;
+}
+
+.anim-slicing .demo-fruit {
+  font-size: 2.2rem;
+  animation: fruitFloat 2.4s infinite ease-in-out;
+}
+
+@keyframes fruitFloat {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  40% { transform: translateY(-4px) scale(1); opacity: 1; }
+  45% { transform: translateY(-4px) scale(0); opacity: 0; }
+  85% { opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.anim-slicing .demo-slash {
+  position: absolute;
+  width: 90px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00f2fe, #ffffff, transparent);
+  box-shadow: 0 0 12px #00f2fe;
+  transform: rotate(-35deg) scaleX(0);
+  animation: slashEffect 2.4s infinite;
+}
+
+@keyframes slashEffect {
+  0%, 35% { transform: rotate(-35deg) scaleX(0); opacity: 0; }
+  42% { transform: rotate(-35deg) scaleX(1.2); opacity: 1; }
+  55%, 100% { transform: rotate(-35deg) scaleX(1.2); opacity: 0; }
+}
+
+.anim-slicing .demo-fruit-half {
+  font-size: 1.6rem;
+  position: absolute;
+  opacity: 0;
+  animation: halfSplit 2.4s infinite;
+}
+
+.anim-slicing .demo-fruit-half.left {
+  animation-name: halfSplitLeft;
+}
+
+.anim-slicing .demo-fruit-half.right {
+  animation-name: halfSplitRight;
+}
+
+@keyframes halfSplitLeft {
+  0%, 42% { opacity: 0; transform: translate(0, 0) rotate(0); }
+  45% { opacity: 1; transform: translate(-14px, 8px) rotate(-35deg); }
+  75% { opacity: 1; transform: translate(-22px, 18px) rotate(-60deg); }
+  85%, 100% { opacity: 0; transform: translate(-25px, 22px) rotate(-70deg); }
+}
+
+@keyframes halfSplitRight {
+  0%, 42% { opacity: 0; transform: translate(0, 0) rotate(0); }
+  45% { opacity: 1; transform: translate(14px, -6px) rotate(35deg); }
+  75% { opacity: 1; transform: translate(22px, -12px) rotate(60deg); }
+  85%, 100% { opacity: 0; transform: translate(25px, -15px) rotate(70deg); }
+}
