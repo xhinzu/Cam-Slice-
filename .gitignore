@@ -1,0 +1,22 @@
+# Node dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.output/
+
+# Vercel deployment folder
+.vercel/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS / Editor temporary files
+.DS_Store
+Thumbs.db
+*.log

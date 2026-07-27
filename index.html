@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fruit Slice Live - Webcam Gesture Slicing Game</title>
+  <meta name="description" content="A real-time webcam gesture fruit slicing game powered by Google MediaPipe HandLandmarker. Slice falling fruits with your index finger!">
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- Video and Canvas Layer -->
+    <div class="viewport-wrapper">
+      <video id="webcam-video" autoplay playsinline muted></video>
+      <canvas id="game-canvas"></canvas>
+      <div id="screen-flash" class="screen-flash"></div>
+    </div>
+
+    <!-- HUD Overlay (Active during gameplay) -->
+    <div id="hud-layer" class="hud-layer hidden">
+      <!-- Top Left: Compact Glassmorphism Leaderboard -->
+      <div id="hud-leaderboard" class="hud-leaderboard glass-panel">
+        <div class="leaderboard-header">
+          <span class="trophy-icon">🏆</span>
+          <h3>Top Ninja Slicers</h3>
+        </div>
+        <div id="leaderboard-list" class="leaderboard-list">
+          <div class="lb-loading">Loading scores...</div>
+        </div>
+      </div>
+
+      <!-- Top Center: Current Match Score & Combo -->
+      <div class="hud-score-center">
+        <div class="score-label">FRUITS SLICED</div>
+        <div id="current-score" class="score-value">0</div>
+        <div id="combo-display" class="combo-badge hidden">COMBO x2!</div>
+      </div>
+
+      <!-- Top Right: Lives and Level Badge -->
+      <div class="hud-status-right">
+        <div id="level-badge" class="level-badge">MEDIUM</div>
+        <div id="lives-display" class="lives-container">
+          <span class="heart active">❤️</span>
+          <span class="heart active">❤️</span>
+          <span class="heart active">❤️</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-modal" class="modal-overlay">
+      <div class="modal-card loading-card glass-panel">
+        <div class="spinner"></div>
+        <h2>Initializing Blade & Camera...</h2>
+        <p id="loading-status">Loading Google MediaPipe Hand Tracking AI...</p>
+      </div>
+    </div>
+
+    <!-- Name Entry Modal -->
+    <div id="name-modal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel glow-border">
+        <div class="logo-badge">🍉 FRUIT SLICE LIVE 🗡️</div>
+        <h1>Enter Slicer Name</h1>
+        <p>Slice falling fruit in real-time using your <strong>index finger</strong> tracked via webcam!</p>
+        
+        <form id="name-form" class="name-form">
+          <div class="input-group">
+            <input type="text" id="player-name-input" placeholder="Ninja Slicer Name..." maxlength="15" required autocomplete="off">
+          </div>
+          <button type="submit" class="btn btn-primary btn-glow">Continue to Arena ➔</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Level Select Modal -->
+    <div id="level-modal" class="modal-overlay hidden">
+      <div class="modal-card level-card glass-panel glow-border">
+        <div class="slicer-greeting">Welcome, <span id="slicer-name-tag" class="highlight-name">Slicer</span>!</div>
+        <h2>Choose Difficulty Level</h2>
+        
+        <div class="level-grid">
+          <button class="level-btn easy" data-level="easy">
+            <div class="level-icon">🍏</div>
+            <div class="level-title">EASY</div>
+            <div class="level-desc">Slow fall, steady spawns, rare bombs. Perfect for warming up!</div>
+          </button>
+          
+          <button class="level-btn medium active" data-level="medium">
+            <div class="level-icon">🍊</div>
+            <div class="level-title">MEDIUM</div>
+            <div class="level-desc">Balanced speed, multiple fruit bursts, occasional bombs.</div>
+          </button>
+          
+          <button class="level-btn hard" data-level="hard">
+            <div class="level-icon">🌶️</div>
+            <div class="level-title">HARD</div>
+            <div class="level-desc">Furious fall speed, multi-fruit frenzies, frequent bombs!</div>
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button id="start-game-btn" class="btn btn-primary btn-large btn-glow">🗡️ START SLICING</button>
+          <button id="change-name-btn" class="btn btn-secondary">Edit Name</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameover-modal" class="modal-overlay hidden">
+      <div class="modal-card gameover-card glass-panel glow-border">
+        <div id="gameover-title" class="gameover-title">GAME OVER</div>
+        
+        <div id="highscore-badge" class="highscore-badge hidden">🎉 NEW HIGH SCORE! 🎉</div>
+
+        <div class="final-stats">
+          <div class="stat-box">
+            <span class="stat-label">Fruits Sliced</span>
+            <span id="final-score" class="stat-value">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Personal Best</span>
+            <span id="best-score" class="stat-value">0</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="restart-btn" class="btn btn-primary btn-large btn-glow">🔄 Play Again</button>
+          <button id="change-level-btn" class="btn btn-secondary">⚙️ Change Level</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Error / Permission Modal -->
+    <div id="camera-error-modal" class="modal-overlay hidden">
+      <div class="modal-card error-card glass-panel">
+        <div class="error-icon">📷❌</div>
+        <h2>Camera Access Required</h2>
+        <p>Fruit Slice Live requires webcam access so you can slice fruit with your real-time hand movements.</p>
+        <div class="instructions-box">
+          <p>1. Ensure your webcam is connected.</p>
+          <p>2. Allow camera permissions in browser URL bar settings.</p>
+          <p>3. Click <strong>Retry Camera Access</strong> below.</p>
+        </div>
+        <button id="retry-camera-btn" class="btn btn-primary btn-glow">🔄 Retry Camera Access</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

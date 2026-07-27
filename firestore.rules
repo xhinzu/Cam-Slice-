@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboard/{document} {
+      // Allow public read access to top leaderboard
+      allow read: if true;
+      
+      // Allow write/create only if name is valid string and score is within sane bounds
+      allow create, update: if request.resource.data.name is string
+                            && request.resource.data.name.size() > 0
+                            && request.resource.data.name.size() <= 20
+                            && request.resource.data.score is number
+                            && request.resource.data.score >= 0
+                            && request.resource.data.score <= 9999;
+    }
+  }
+}

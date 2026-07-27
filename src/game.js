@@ -1,0 +1,306 @@
+/**
+ * Game Manager - Core Game Loop, Difficulty Configuration, Collision Detection,
+ * Fruit Spawning, Particle Splatters, Combo Detection, and Lives System.
+ */
+
+import { Fruit, SlicedHalf, Particle } from './fruit.js';
+import { sounds } from './audio.js';
+
+export const DIFFICULTY_CONFIGS = {
+  easy: {
+    spawnInterval: 1200,
+    fallSpeed: 0.9,
+    burstCount: [1, 1],
+    bombChance: 0.10
+  },
+  medium: {
+    spawnInterval: 800,
+    fallSpeed: 1.25,
+    burstCount: [1, 2],
+    bombChance: 0.20
+  },
+  hard: {
+    spawnInterval: 500,
+    fallSpeed: 1.65,
+    burstCount: [2, 3],
+    bombChance: 0.35
+  }
+};
+
+export class GameManager {
+  constructor(canvas, cameraManager, handTrackerManager, uiManager, leaderboardManager) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.camera = cameraManager;
+    this.handTracker = handTrackerManager;
+    this.ui = uiManager;
+    this.leaderboard = leaderboardManager;
+
+    this.isPlaying = false;
+    this.score = 0;
+    this.lives = 3;
+    this.currentLevel = 'medium';
+
+    // Entities
+    this.fruits = [];
+    this.slicedHalves = [];
+    this.particles = [];
+
+    // Spawning & Loop
+    this.lastSpawnTime = 0;
+    this.animFrameId = null;
+
+    // Combo system
+    this.recentSliceCount = 0;
+    this.lastSliceTimestamp = 0;
+
+    // Screen Shake
+    this.shakeDuration = 0;
+
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
+  }
+
+  resizeCanvas() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  startNewGame(level = 'medium') {
+    this.currentLevel = level;
+    this.score = 0;
+    this.lives = 3;
+    this.fruits = [];
+    this.slicedHalves = [];
+    this.particles = [];
+    this.lastSpawnTime = performance.now();
+    this.isPlaying = true;
+
+    this.ui.updateHUDScore(0);
+    this.ui.updateHUDLives(3);
+    this.ui.updateLevelBadge(level);
+    this.ui.setHUDVisible(true);
+
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+    }
+    this.gameLoop(performance.now());
+  }
+
+  stopGame() {
+    this.isPlaying = false;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    this.ui.setHUDVisible(false);
+  }
+
+  async triggerGameOver() {
+    this.isPlaying = false;
+    sounds.playGameOver();
+
+    const playerName = this.ui.getPlayerName();
+    const bestScore = await this.leaderboard.submitScore(playerName, this.score);
+    const isNewHighScore = this.score >= bestScore && this.score > 0;
+
+    this.ui.setHUDVisible(false);
+    this.ui.showGameOver(this.score, bestScore, isNewHighScore);
+  }
+
+  gameLoop(timestamp) {
+    if (!this.isPlaying) return;
+
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Apply Screen Shake if active
+    if (this.shakeDuration > 0) {
+      this.ctx.save();
+      const dx = (Math.random() - 0.5) * 16;
+      const dy = (Math.random() - 0.5) * 16;
+      this.ctx.translate(dx, dy);
+      this.shakeDuration--;
+    }
+
+    // 1. Hand Tracking & Blade Segment Detection
+    const { activeBladeSegments } = this.handTracker.detectHands(
+      this.camera.video,
+      timestamp,
+      this.canvas.width,
+      this.canvas.height
+    );
+
+    // 2. Spawn Fruits & Bombs
+    const config = DIFFICULTY_CONFIGS[this.currentLevel] || DIFFICULTY_CONFIGS.medium;
+    if (timestamp - this.lastSpawnTime > config.spawnInterval) {
+      this.spawnFruitBurst(config);
+      this.lastSpawnTime = timestamp;
+    }
+
+    // 3. Collision Checks & Entity Updates
+    this.updateAndDrawEntities(activeBladeSegments, config);
+
+    // 4. Draw Glowing Blade Trails
+    this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments);
+
+    if (this.shakeDuration > 0) {
+      this.ctx.restore();
+    }
+
+    this.animFrameId = requestAnimationFrame((t) => this.gameLoop(t));
+  }
+
+  spawnFruitBurst(config) {
+    const minCount = config.burstCount[0];
+    const maxCount = config.burstCount[1];
+    const count = minCount + Math.floor(Math.random() * (maxCount - minCount + 1));
+
+    for (let i = 0; i < count; i++) {
+      const isBomb = Math.random() < config.bombChance;
+      this.fruits.push(new Fruit(this.canvas.width, config.fallSpeed, isBomb));
+    }
+  }
+
+  updateAndDrawEntities(bladeSegments, config) {
+    // A. Update Fruits
+    for (let i = this.fruits.length - 1; i >= 0; i--) {
+      const fruit = this.fruits[i];
+      fruit.update();
+      fruit.draw(this.ctx);
+
+      // Check offscreen fall (missed fruit)
+      if (fruit.markedForDeletion) {
+        if (!fruit.sliced && fruit.type === 'fruit') {
+          this.lives--;
+          this.ui.updateHUDLives(this.lives);
+          if (this.lives <= 0) {
+            this.triggerGameOver();
+            return;
+          }
+        }
+        this.fruits.splice(i, 1);
+        continue;
+      }
+
+      // Check collision with slicing blade segments
+      if (!fruit.sliced) {
+        for (const segment of bladeSegments) {
+          const hitMotion = segment.isSlicing && this.checkLineCircleCollision(
+            segment.x1, segment.y1,
+            segment.x2, segment.y2,
+            fruit.x, fruit.y,
+            fruit.radius + 20
+          );
+          
+          const hitFingerJoint = this.checkLineCircleCollision(
+            segment.dipX, segment.dipY,
+            segment.x2, segment.y2,
+            fruit.x, fruit.y,
+            fruit.radius + 15
+          );
+
+          if (hitMotion || hitFingerJoint) {
+            this.handleSlice(fruit);
+            break;
+          }
+        }
+      }
+    }
+
+    // B. Update Sliced Halves
+    for (let i = this.slicedHalves.length - 1; i >= 0; i--) {
+      const half = this.slicedHalves[i];
+      half.update();
+      half.draw(this.ctx);
+      if (half.markedForDeletion) {
+        this.slicedHalves.splice(i, 1);
+      }
+    }
+
+    // C. Update Particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.update();
+      p.draw(this.ctx);
+      if (p.markedForDeletion) {
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+
+  handleSlice(entity) {
+    entity.sliced = true;
+    entity.markedForDeletion = true;
+
+    if (entity.type === 'bomb') {
+      // Sliced a bomb! Instant Explosion & Game Over
+      sounds.playBomb();
+      this.ui.triggerScreenFlash();
+      this.shakeDuration = 20;
+
+      // Spawn fiery explosion particles
+      for (let i = 0; i < 35; i++) {
+        this.particles.push(new Particle(entity.x, entity.y, '#ff4757'));
+        this.particles.push(new Particle(entity.x, entity.y, '#ffa502'));
+        this.particles.push(new Particle(entity.x, entity.y, '#2f3542'));
+      }
+
+      this.lives = 0;
+      this.ui.updateHUDLives(0);
+      this.triggerGameOver();
+      return;
+    }
+
+    // Sliced a Fruit!
+    sounds.playSlice();
+    sounds.playSplat();
+
+    this.score++;
+    this.ui.updateHUDScore(this.score);
+
+    // Multi-slice combo tracking
+    const now = performance.now();
+    if (now - this.lastSliceTimestamp < 350) {
+      this.recentSliceCount++;
+      if (this.recentSliceCount >= 2) {
+        sounds.playCombo();
+        this.ui.showCombo(this.recentSliceCount);
+      }
+    } else {
+      this.recentSliceCount = 1;
+    }
+    this.lastSliceTimestamp = now;
+
+    // Create 2 split fruit halves flying apart
+    this.slicedHalves.push(new SlicedHalf(entity.x, entity.y, entity.emoji, true, entity.color, entity.vx, entity.vy));
+    this.slicedHalves.push(new SlicedHalf(entity.x, entity.y, entity.emoji, false, entity.color, entity.vx, entity.vy));
+
+    // Create 18 juice splash particles
+    for (let i = 0; i < 18; i++) {
+      this.particles.push(new Particle(entity.x, entity.y, entity.juiceColor));
+    }
+  }
+
+  /**
+   * Mathematics: Line Segment to Circle Collision Test
+   */
+  checkLineCircleCollision(x1, y1, x2, y2, cx, cy, r) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+
+    if (lenSq === 0) {
+      return Math.hypot(cx - x1, cy - y1) <= r;
+    }
+
+    // Project point onto line segment
+    let t = ((cx - x1) * dx + (cy - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+
+    const projX = x1 + t * dx;
+    const projY = y1 + t * dy;
+
+    const dist = Math.hypot(cx - projX, cy - projY);
+    return dist <= r + 10; // Add small generous margin for satisfying slice feel
+  }
+}
