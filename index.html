@@ -30,9 +30,13 @@
         <div class="leaderboard-header">
           <div class="lb-title-group">
             <span class="trophy-icon">🏆</span>
-            <h3>Top Ninja Slicers</h3>
+            <h3>Top Slicers</h3>
           </div>
           <button id="toggle-lb-btn" class="toggle-lb-btn" title="Hide/Show Leaderboard">👁️</button>
+        </div>
+        <div class="lb-mode-tabs">
+          <button class="lb-tab active" data-lb-mode="fruit-slice">🍉 Fruit</button>
+          <button class="lb-tab" data-lb-mode="punch-glass">🥊 Glass</button>
         </div>
         <div id="leaderboard-list" class="leaderboard-list">
           <div class="lb-loading">Loading scores...</div>
@@ -41,7 +45,7 @@
 
       <!-- Top Center: Current Match Score & Combo -->
       <div class="hud-score-center">
-        <div class="score-label">FRUITS SLICED</div>
+        <div id="score-label" class="score-label">FRUITS SLICED</div>
         <div id="current-score" class="score-value">0</div>
         <div id="combo-display" class="combo-badge hidden">COMBO x2!</div>
       </div>
@@ -198,25 +202,42 @@
     <div id="level-modal" class="modal-overlay hidden">
       <div class="modal-card level-card glass-panel glow-border">
         <div class="slicer-greeting">Welcome, <span id="slicer-name-tag" class="highlight-name">Slicer</span>!</div>
-        <h2>Choose Difficulty Mode</h2>
+        <h2>Select Game Mode & Difficulty</h2>
         
+        <!-- Game Mode Selection Cards -->
+        <div class="mode-select-grid">
+          <button class="mode-card active" data-mode="fruit-slice">
+            <div class="mode-card-icon">🍉</div>
+            <div class="mode-card-title">FRUIT SLICE</div>
+            <div class="mode-card-desc">Classic slice & dice! Slice falling fruit, avoid bombs.</div>
+          </button>
+
+          <button class="mode-card" data-mode="punch-glass">
+            <div class="mode-card-badge">NEW! 🔥</div>
+            <div class="mode-card-icon">🥊</div>
+            <div class="mode-card-title">PUNCH THE GLASS</div>
+            <div class="mode-card-desc">Punch 3x3 translucent glass grid! Shatter green panes, dodge red traps.</div>
+          </button>
+        </div>
+
+        <h3>Choose Difficulty Level</h3>
         <div class="level-grid">
           <button class="level-btn easy" data-level="easy">
             <div class="level-icon">🍏</div>
             <div class="level-title">EASY</div>
-            <div class="level-desc">Slow fall, steady spawns, rare bombs. Perfect for warming up!</div>
+            <div class="level-desc">Slow spawns, longer pane fade, lower penalty chance.</div>
           </button>
           
           <button class="level-btn medium active" data-level="medium">
             <div class="level-icon">🍊</div>
             <div class="level-title">MEDIUM</div>
-            <div class="level-desc">Balanced speed, multiple fruit bursts, occasional bombs.</div>
+            <div class="level-desc">Balanced speed, multiple targets, moderate challenge.</div>
           </button>
           
           <button class="level-btn hard" data-level="hard">
             <div class="level-icon">🌶️</div>
             <div class="level-title">HARD</div>
-            <div class="level-desc">Furious fall speed, multi-fruit frenzies, frequent bombs!</div>
+            <div class="level-desc">Furious spawn speed, fast pane fadeouts, high penalty risk!</div>
           </button>
 
           <button class="level-btn dev-mode disabled" disabled>
@@ -228,7 +249,7 @@
         </div>
 
         <div class="modal-actions">
-          <button id="start-game-btn" class="btn btn-primary btn-large btn-glow">🗡️ START SLICING</button>
+          <button id="start-game-btn" class="btn btn-primary btn-large btn-glow">🚀 START GAME</button>
           <div class="secondary-btn-row">
             <button id="back-to-menu-btn" class="btn btn-secondary">⬅ Main Menu</button>
             <button id="change-name-btn" class="btn btn-secondary">Edit Name</button>

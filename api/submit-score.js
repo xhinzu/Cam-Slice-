@@ -28,22 +28,23 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const { name, score } = body || {};
+    const { name, score, mode } = body || {};
 
     const cleanName = (name || '').trim().substring(0, 20);
     const numScore = Number(score);
+    const modeKey = mode === 'punch-glass' ? 'leaderboard:punch-glass' : 'leaderboard';
     const blockedNames = ['sreedev', 'zhinsu'];
 
     if (!cleanName || isNaN(numScore) || numScore < 0 || numScore > 9999 || blockedNames.includes(cleanName.toLowerCase())) {
       return res.status(400).json({ error: 'Invalid or restricted player name.' });
     }
 
-    // Check existing score in sorted set 'leaderboard'
-    const existingScore = await kv.zscore('leaderboard', cleanName);
+    // Check existing score in mode sorted set
+    const existingScore = await kv.zscore(modeKey, cleanName);
 
     if (existingScore === null || numScore > Number(existingScore)) {
       // Add or update member score in sorted set
-      await kv.zadd('leaderboard', { score: numScore, member: cleanName });
+      await kv.zadd(modeKey, { score: numScore, member: cleanName });
     }
 
     return res.status(200).json({

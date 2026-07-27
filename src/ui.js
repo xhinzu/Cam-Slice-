@@ -26,6 +26,7 @@ export class UIManager {
     this.toggleLBBtn = document.getElementById('toggle-lb-btn');
     this.leaderboardListEl = document.getElementById('leaderboard-list');
     this.screenFlashEl = document.getElementById('screen-flash');
+    this.scoreLabelEl = document.getElementById('score-label');
 
     // Main Menu Buttons & Tags
     this.menuPlayBtn = document.getElementById('menu-play-btn');
@@ -38,6 +39,11 @@ export class UIManager {
     this.backToMenuBtn = document.getElementById('back-to-menu-btn');
     this.quitReturnBtn = document.getElementById('quit-return-btn');
 
+    // Mode & Level Cards
+    this.modeCards = document.querySelectorAll('.mode-card');
+    this.lbTabs = document.querySelectorAll('.lb-tab');
+    this.levelBtns = document.querySelectorAll('.level-btn');
+
     // Form inputs & button refs
     this.nameForm = document.getElementById('name-form');
     this.nameInput = document.getElementById('player-name-input');
@@ -49,7 +55,6 @@ export class UIManager {
     this.restartBtn = document.getElementById('restart-btn');
     this.changeLevelBtn = document.getElementById('change-level-btn');
     this.retryCameraBtn = document.getElementById('retry-camera-btn');
-    this.levelBtns = document.querySelectorAll('.level-btn');
 
     // Game Over display refs
     this.finalScoreEl = document.getElementById('final-score');
@@ -57,6 +62,33 @@ export class UIManager {
     this.highscoreBadgeEl = document.getElementById('highscore-badge');
 
     this.playerNameKey = 'fruit_slice_player_name';
+  }
+
+  setModeActive(mode) {
+    if (this.modeCards) {
+      this.modeCards.forEach(card => {
+        if (card.dataset.mode === mode) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+    if (this.scoreLabelEl) {
+      this.scoreLabelEl.textContent = mode === 'punch-glass' ? 'PANES BROKEN' : 'FRUITS SLICED';
+    }
+  }
+
+  setLBTabActive(mode) {
+    if (this.lbTabs) {
+      this.lbTabs.forEach(tab => {
+        if (tab.dataset.lbMode === mode) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+    }
   }
 
   toggleLeaderboard() {

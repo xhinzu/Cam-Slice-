@@ -8,29 +8,32 @@ class LeaderboardManager {
     this.localLeaderboardKey = 'fruit_slice_local_lb';
     this.personalBestKey = 'fruit_slice_pb';
     this.activeCallback = null;
+    this.currentMode = 'fruit-slice';
   }
 
   /**
    * Subscribe / query top-10 leaderboard scores from /api/leaderboard or local storage.
    */
-  async subscribeTopScores(callback, currentPlayerName = '') {
+  async subscribeTopScores(callback, currentPlayerName = '', mode = 'fruit-slice') {
     this.activeCallback = callback;
-    await this.refreshTopScores();
+    this.currentMode = mode;
+    await this.refreshTopScores(mode);
   }
 
-  async refreshTopScores() {
+  async refreshTopScores(mode = this.currentMode) {
     if (!this.activeCallback) return;
+    this.currentMode = mode;
 
     const blockedNames = ['sreedev', 'zhinsu'];
 
     try {
-      const response = await fetch('/api/leaderboard');
+      const response = await fetch(`/api/leaderboard?mode=${mode}`);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
           const cleanData = data.filter(item => item && item.name && !blockedNames.includes(item.name.toLowerCase()));
-          // Sync with local cache
-          localStorage.setItem(this.localLeaderboardKey, JSON.stringify(cleanData));
+          // Sync with local cache per mode
+          localStorage.setItem(`${this.localLeaderboardKey}_${mode}`, JSON.stringify(cleanData));
           this.activeCallback(cleanData);
           return;
         }
@@ -40,25 +43,26 @@ class LeaderboardManager {
     }
 
     // Fallback: local storage top 10
-    this.activeCallback(this.getLocalLeaderboard());
+    this.activeCallback(this.getLocalLeaderboard(mode));
   }
 
   /**
    * Save or update score for player via POST /api/submit-score.
    */
-  async submitScore(name, score) {
+  async submitScore(name, score, mode = 'fruit-slice') {
     const cleanName = (name || 'Anonymous').trim().substring(0, 20);
     const blockedNames = ['sreedev', 'zhinsu'];
     if (blockedNames.includes(cleanName.toLowerCase())) return 0;
 
-    const pb = this.getPersonalBest();
+    const pbKey = `${this.personalBestKey}_${mode}`;
+    const pb = this.getPersonalBest(mode);
 
     if (score > pb) {
-      localStorage.setItem(this.personalBestKey, score.toString());
+      localStorage.setItem(pbKey, score.toString());
     }
 
     // 1. Update local storage leaderboard cache immediately
-    this.updateLocalLeaderboard(cleanName, score);
+    this.updateLocalLeaderboard(cleanName, score, mode);
 
     // 2. Submit score to Vercel KV Serverless Function
     try {
@@ -67,13 +71,13 @@ class LeaderboardManager {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name: cleanName, score: score })
+        body: JSON.stringify({ name: cleanName, score: score, mode: mode })
       });
 
       if (response.ok) {
-        console.log('🏆 Score successfully recorded to Vercel KV!');
+        console.log(`🏆 Score successfully recorded to Vercel KV (${mode})!`);
         // Refresh leaderboard after successful write
-        await this.refreshTopScores();
+        await this.refreshTopScores(mode);
       }
     } catch (err) {
       console.warn('Failed to post score to /api/submit-score, cached locally:', err);
@@ -82,13 +86,14 @@ class LeaderboardManager {
     return Math.max(score, pb);
   }
 
-  getPersonalBest() {
-    const val = localStorage.getItem(this.personalBestKey);
+  getPersonalBest(mode = 'fruit-slice') {
+    const val = localStorage.getItem(`${this.personalBestKey}_${mode}`) || localStorage.getItem(this.personalBestKey);
     return val ? parseInt(val, 10) : 0;
   }
 
-  getLocalLeaderboard() {
-    const stored = localStorage.getItem(this.localLeaderboardKey);
+  getLocalLeaderboard(mode = 'fruit-slice') {
+    const key = `${this.localLeaderboardKey}_${mode}`;
+    const stored = localStorage.getItem(key) || localStorage.getItem(this.localLeaderboardKey);
     let list = [];
     if (stored) {
       try {
@@ -138,11 +143,11 @@ class LeaderboardManager {
     return finalList;
   }
 
-  updateLocalLeaderboard(name, score) {
+  updateLocalLeaderboard(name, score, mode = 'fruit-slice') {
     const blockedNames = ['sreedev', 'zhinsu'];
     if (blockedNames.includes(name.toLowerCase())) return;
 
-    const lb = this.getLocalLeaderboard();
+    const lb = this.getLocalLeaderboard(mode);
     const existingIdx = lb.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
 
     if (existingIdx >= 0) {
@@ -155,7 +160,7 @@ class LeaderboardManager {
 
     lb.sort((a, b) => b.score - a.score);
     const top10 = lb.slice(0, 10);
-    localStorage.setItem(this.localLeaderboardKey, JSON.stringify(top10));
+    localStorage.setItem(`${this.localLeaderboardKey}_${mode}`, JSON.stringify(top10));
   }
 }
 

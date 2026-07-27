@@ -4,6 +4,7 @@
  */
 
 import { Fruit, SlicedHalf, Particle } from './fruit.js';
+import { PunchTheGlassManager } from './punchGlass.js';
 import { sounds } from './audio.js';
 
 export const DIFFICULTY_CONFIGS = {
@@ -40,11 +41,13 @@ export class GameManager {
     this.score = 0;
     this.lives = 3;
     this.currentLevel = 'medium';
+    this.gameMode = 'fruit-slice'; // 'fruit-slice' or 'punch-glass'
 
-    // Entities
+    // Entities & Mode Managers
     this.fruits = [];
     this.slicedHalves = [];
     this.particles = [];
+    this.punchGlassManager = new PunchTheGlassManager(canvas, this);
 
     // Spawning & Loop
     this.lastSpawnTime = 0;
@@ -66,8 +69,9 @@ export class GameManager {
     this.canvas.height = window.innerHeight;
   }
 
-  startNewGame(level = 'medium') {
+  startNewGame(level = 'medium', mode = 'fruit-slice') {
     this.currentLevel = level;
+    this.gameMode = mode;
     this.score = 0;
     this.lives = 3;
     this.fruits = [];
@@ -75,6 +79,10 @@ export class GameManager {
     this.particles = [];
     this.lastSpawnTime = performance.now();
     this.isPlaying = true;
+
+    if (this.gameMode === 'punch-glass') {
+      this.punchGlassManager.reset();
+    }
 
     this.ui.updateHUDScore(0);
     this.ui.updateHUDLives(3);
@@ -101,7 +109,7 @@ export class GameManager {
     sounds.playGameOver();
 
     const playerName = this.ui.getPlayerName();
-    const bestScore = await this.leaderboard.submitScore(playerName, this.score);
+    const bestScore = await this.leaderboard.submitScore(playerName, this.score, this.gameMode);
     const isNewHighScore = this.score >= bestScore && this.score > 0;
 
     this.ui.setHUDVisible(false);
@@ -130,17 +138,20 @@ export class GameManager {
       this.canvas.height
     );
 
-    // 2. Spawn Fruits & Bombs
-    const config = DIFFICULTY_CONFIGS[this.currentLevel] || DIFFICULTY_CONFIGS.medium;
-    if (timestamp - this.lastSpawnTime > config.spawnInterval) {
-      this.spawnFruitBurst(config);
-      this.lastSpawnTime = timestamp;
+    // 2. Mode Specific Gameplay Logic
+    if (this.gameMode === 'punch-glass') {
+      this.punchGlassManager.updateAndDraw(timestamp, activeBladeSegments);
+    } else {
+      // Classic Fruit Slice Mode
+      const config = DIFFICULTY_CONFIGS[this.currentLevel] || DIFFICULTY_CONFIGS.medium;
+      if (timestamp - this.lastSpawnTime > config.spawnInterval) {
+        this.spawnFruitBurst(config);
+        this.lastSpawnTime = timestamp;
+      }
+      this.updateAndDrawEntities(activeBladeSegments, config);
     }
 
-    // 3. Collision Checks & Entity Updates
-    this.updateAndDrawEntities(activeBladeSegments, config);
-
-    // 4. Draw Glowing Blade Trails
+    // 3. Draw Glowing Blade Trails
     this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments);
 
     if (this.shakeDuration > 0) {

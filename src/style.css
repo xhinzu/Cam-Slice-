@@ -1058,6 +1058,106 @@ html, body {
   right: 8px;
 }
 
+/* Mode Selection Cards */
+.mode-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.mode-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s;
+  color: #ffffff;
+}
+
+.mode-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-3px);
+}
+
+.mode-card.active {
+  border-color: var(--color-blade-neon);
+  background: rgba(0, 242, 254, 0.14);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
+}
+
+.mode-card-badge {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #05070c;
+  background: var(--color-gold);
+  padding: 2px 8px;
+  border-radius: 10px;
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  box-shadow: 0 0 10px rgba(255, 165, 2, 0.6);
+}
+
+.mode-card-icon {
+  font-size: 2.4rem;
+}
+
+.mode-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.mode-card-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* Leaderboard Mode Tabs */
+.lb-mode-tabs {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.lb-tab {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lb-tab:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.lb-tab.active {
+  background: rgba(0, 242, 254, 0.18);
+  border-color: var(--color-blade-neon);
+  color: var(--color-blade-neon);
+}
+
 /* ==========================================================================
    Bottom Right Watermark
    ========================================================================== */

@@ -20,6 +20,7 @@ class AppController {
     this.game = new GameManager(this.canvasEl, this.camera, this.handTracker, this.ui, leaderboard);
 
     this.selectedLevel = 'medium';
+    this.selectedMode = 'fruit-slice';
 
     this.init();
   }
@@ -52,7 +53,7 @@ class AppController {
     // 4. Connect real-time Leaderboard subscriber
     leaderboard.subscribeTopScores((scores) => {
       this.ui.renderLeaderboard(scores, this.ui.getPlayerName());
-    });
+    }, this.ui.getPlayerName(), this.selectedMode);
 
     // 5. Bind User Interface Events
     this.bindEvents();
@@ -77,7 +78,7 @@ class AppController {
         // Refresh leaderboard active player highlight
         leaderboard.subscribeTopScores((scores) => {
           this.ui.renderLeaderboard(scores, inputVal);
-        });
+        }, inputVal, this.selectedMode);
       }
     });
 
@@ -92,7 +93,8 @@ class AppController {
     if (this.ui.menuPlayBtn) {
       this.ui.menuPlayBtn.addEventListener('click', () => {
         this.ui.hideAllModals();
-        this.game.startNewGame(this.selectedLevel);
+        this.ui.setModeActive(this.selectedMode);
+        this.game.startNewGame(this.selectedLevel, this.selectedMode);
       });
     }
 
@@ -133,6 +135,27 @@ class AppController {
       });
     }
 
+    // Mode Selection Cards (Fruit Slice vs Punch Glass)
+    this.ui.modeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        this.selectedMode = card.dataset.mode;
+        this.ui.setModeActive(this.selectedMode);
+        this.ui.setLBTabActive(this.selectedMode);
+        leaderboard.refreshTopScores(this.selectedMode);
+      });
+    });
+
+    // Leaderboard HUD Mode Tabs
+    this.ui.lbTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const mode = tab.dataset.lbMode;
+        this.selectedMode = mode;
+        this.ui.setModeActive(mode);
+        this.ui.setLBTabActive(mode);
+        leaderboard.refreshTopScores(mode);
+      });
+    });
+
     // Toggle Leaderboard visibility (Eye Icon)
     if (this.ui.toggleLBBtn) {
       this.ui.toggleLBBtn.addEventListener('click', () => {
@@ -152,7 +175,8 @@ class AppController {
     // Start Game Button on Level Modal
     this.ui.startGameBtn.addEventListener('click', () => {
       this.ui.hideAllModals();
-      this.game.startNewGame(this.selectedLevel);
+      this.ui.setModeActive(this.selectedMode);
+      this.game.startNewGame(this.selectedLevel, this.selectedMode);
     });
 
     // Change Name Button
@@ -163,7 +187,8 @@ class AppController {
     // Game Over: Restart Button
     this.ui.restartBtn.addEventListener('click', () => {
       this.ui.hideAllModals();
-      this.game.startNewGame(this.selectedLevel);
+      this.ui.setModeActive(this.selectedMode);
+      this.game.startNewGame(this.selectedLevel, this.selectedMode);
     });
 
     // Game Over: Change Level Button -> Goes to Main Menu

@@ -28,26 +28,28 @@ export default async function handler(req, res) {
 
   try {
     const blockedNames = ['sreedev', 'zhinsu'];
+    const mode = req.query ? (req.query.mode || 'fruit-slice') : 'fruit-slice';
+    const modeKey = mode === 'punch-glass' ? 'leaderboard:punch-glass' : 'leaderboard';
 
     // Remove capitalized 'Xhinzu' from Redis KV store and ensure lowercase 'xhinzu' has 88 & 'Dingan' has 45
     try {
-      await kv.zrem('leaderboard', 'Xhinzu');
+      await kv.zrem(modeKey, 'Xhinzu');
       
-      const xScore = await kv.zscore('leaderboard', 'xhinzu');
+      const xScore = await kv.zscore(modeKey, 'xhinzu');
       if (xScore === null || Number(xScore) < 88) {
-        await kv.zadd('leaderboard', { score: 88, member: 'xhinzu' });
+        await kv.zadd(modeKey, { score: 88, member: 'xhinzu' });
       }
 
-      const dScore = await kv.zscore('leaderboard', 'Dingan');
+      const dScore = await kv.zscore(modeKey, 'Dingan');
       if (dScore === null || Number(dScore) < 45) {
-        await kv.zadd('leaderboard', { score: 45, member: 'Dingan' });
+        await kv.zadd(modeKey, { score: 45, member: 'Dingan' });
       }
     } catch (e) {
       // ignore KV write errors
     }
 
-    // Retrieve top 20 from sorted set 'leaderboard' descending
-    const rawResult = await kv.zrange('leaderboard', 0, 19, { rev: true, withScores: true });
+    // Retrieve top 20 from sorted set modeKey descending
+    const rawResult = await kv.zrange(modeKey, 0, 19, { rev: true, withScores: true });
 
     const formattedList = [];
 
