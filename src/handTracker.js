@@ -14,6 +14,10 @@ export class HandTrackerManager {
     this.handHistories = new Map();
     this.smoothedPositions = new Map();
     
+    // Frame throttling cache
+    this.lastVideoTime = -1;
+    this.lastDetectionResult = { activeBladeSegments: [], handsTracked: 0 };
+
     // Blade configuration
     this.historyLength = 10;
     this.sliceVelocityThreshold = 0.35; // Lower velocity threshold (px/ms) for responsive slicing
@@ -55,6 +59,12 @@ export class HandTrackerManager {
       return { activeBladeSegments: [], handsTracked: 0 };
     }
 
+    // Skip inference if video frame hasn't advanced (saves up to 60% CPU/GPU overhead on high refresh rate displays)
+    if (videoElement.currentTime === this.lastVideoTime) {
+      return this.lastDetectionResult;
+    }
+    this.lastVideoTime = videoElement.currentTime;
+
     const results = this.handLandmarker.detectForVideo(videoElement, timestamp);
     const activeBladeSegments = [];
     const activeHandIds = new Set();
@@ -64,7 +74,6 @@ export class HandTrackerManager {
         // Track Index Fingertip (8), Index DIP (7), Index PIP (6), and Middle Fingertip (12)
         const indexTip = handLandmarks[8];
         const indexDip = handLandmarks[7];
-        const middleTip = handLandmarks[12];
         if (!indexTip) return;
 
         // Convert coordinates to horizontally mirrored canvas space
@@ -121,12 +130,11 @@ export class HandTrackerManager {
             y1: prev.y,
             x2: curr.x,
             y2: curr.y,
-            // Include finger joint segment (dip -> tip) to widen hit precision
             dipX: curr.dipX,
             dipY: curr.dipY,
             velocity,
             isSlicing,
-            history: [...history]
+            history
           });
         }
       });
@@ -140,75 +148,80 @@ export class HandTrackerManager {
       }
     }
 
-    return {
+    this.lastDetectionResult = {
       activeBladeSegments,
       handsTracked: results.landmarks ? results.landmarks.length : 0
     };
+
+    return this.lastDetectionResult;
   }
 
   /**
-   * Render glowing neon blade trails and fingertip indicator nodes.
+   * Render glowing neon blade trails and fingertip indicator nodes with ZERO shadowBlur penalty.
+   * Uses additive blending (globalCompositeOperation = 'lighter') for 60+ FPS neon glow.
    */
   drawBladeTrails(ctx, bladeSegments) {
     if (!bladeSegments || bladeSegments.length === 0) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = 'lighter'; // Fast GPU additive neon blend
 
     bladeSegments.forEach(segment => {
       const history = segment.history;
       if (!history || history.length < 2) return;
 
-      ctx.save();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      const isSlicing = segment.isSlicing;
+      const glowColor = isSlicing ? '0, 242, 254' : '255, 255, 255';
 
-      // Draw multi-layered glowing neon trail
+      // 1. Wide Neon Outer Glow Trail
       for (let i = 1; i < history.length; i++) {
         const p1 = history[i - 1];
         const p2 = history[i];
         const progress = i / history.length;
 
-        // Outer Neon Glow
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.lineWidth = 16 * progress;
-        ctx.strokeStyle = segment.isSlicing 
-          ? `rgba(0, 242, 254, ${0.85 * progress})` 
-          : `rgba(255, 255, 255, ${0.4 * progress})`;
-        ctx.shadowColor = segment.isSlicing ? '#00f2fe' : '#ffffff';
-        ctx.shadowBlur = 20;
+        ctx.lineWidth = (isSlicing ? 20 : 12) * progress;
+        ctx.strokeStyle = `rgba(${glowColor}, ${0.5 * progress})`;
         ctx.stroke();
 
-        // Inner Core White Hot Blade Edge
+        // Medium Glow Core
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.lineWidth = 5 * progress;
-        ctx.strokeStyle = `rgba(255, 255, 255, ${1 * progress})`;
-        ctx.shadowBlur = 0;
+        ctx.lineWidth = (isSlicing ? 10 : 6) * progress;
+        ctx.strokeStyle = `rgba(${glowColor}, ${0.85 * progress})`;
+        ctx.stroke();
+
+        // Hot White Core Blade Edge
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineWidth = 4 * progress;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * progress})`;
         ctx.stroke();
       }
 
-      // Active Fingertip Indicator Flare & Ring
+      // 2. Active Fingertip Flare Node
       const tip = history[history.length - 1];
 
-      // Outer Pulsing Aura Ring
+      // Outer Aura Ring
       ctx.beginPath();
       ctx.arc(tip.x, tip.y, 16, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(0, 242, 254, 0.6)';
-      ctx.lineWidth = 2;
-      ctx.shadowColor = '#00f2fe';
-      ctx.shadowBlur = 15;
+      ctx.strokeStyle = 'rgba(0, 242, 254, 0.7)';
+      ctx.lineWidth = 3;
       ctx.stroke();
 
-      // Core Fingertip Node
+      // Inner Core Node
       ctx.beginPath();
       ctx.arc(tip.x, tip.y, 8, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = '#00f2fe';
-      ctx.shadowBlur = 25;
       ctx.fill();
-
-      ctx.restore();
     });
+
+    ctx.restore();
   }
 }

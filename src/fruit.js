@@ -73,10 +73,6 @@ export class Fruit {
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rotation);
 
-    // Subtle glow backing
-    ctx.shadowColor = this.juiceColor;
-    ctx.shadowBlur = 15;
-
     ctx.font = `${this.radius * 1.8}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -179,8 +175,6 @@ export class Particle {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 10;
     ctx.fill();
     ctx.restore();
   }

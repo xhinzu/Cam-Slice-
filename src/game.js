@@ -239,10 +239,11 @@ export class GameManager {
       this.shakeDuration = 20;
 
       // Spawn fiery explosion particles
-      for (let i = 0; i < 35; i++) {
-        this.particles.push(new Particle(entity.x, entity.y, '#ff4757'));
-        this.particles.push(new Particle(entity.x, entity.y, '#ffa502'));
-        this.particles.push(new Particle(entity.x, entity.y, '#2f3542'));
+      for (let i = 0; i < 15; i++) {
+        if (this.particles.length < 40) {
+          this.particles.push(new Particle(entity.x, entity.y, '#ff4757'));
+          this.particles.push(new Particle(entity.x, entity.y, '#ffa502'));
+        }
       }
 
       this.lives = 0;
@@ -275,8 +276,9 @@ export class GameManager {
     this.slicedHalves.push(new SlicedHalf(entity.x, entity.y, entity.emoji, true, entity.color, entity.vx, entity.vy));
     this.slicedHalves.push(new SlicedHalf(entity.x, entity.y, entity.emoji, false, entity.color, entity.vx, entity.vy));
 
-    // Create 18 juice splash particles
-    for (let i = 0; i < 18; i++) {
+    // Create juice splash particles (capped at 40 max total)
+    const countToSpawn = Math.min(10, 40 - this.particles.length);
+    for (let i = 0; i < countToSpawn; i++) {
       this.particles.push(new Particle(entity.x, entity.y, entity.juiceColor));
     }
   }
