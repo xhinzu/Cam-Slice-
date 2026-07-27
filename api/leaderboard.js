@@ -29,12 +29,15 @@ export default async function handler(req, res) {
   try {
     const blockedNames = ['sreedev', 'zhinsu'];
 
-    // Ensure Xhinzu (88) & Dingan (45) in KV if missing or lower
+    // Remove capitalized 'Xhinzu' from Redis KV store and ensure lowercase 'xhinzu' has 88 & 'Dingan' has 45
     try {
-      const xScore = await kv.zscore('leaderboard', 'Xhinzu');
+      await kv.zrem('leaderboard', 'Xhinzu');
+      
+      const xScore = await kv.zscore('leaderboard', 'xhinzu');
       if (xScore === null || Number(xScore) < 88) {
-        await kv.zadd('leaderboard', { score: 88, member: 'Xhinzu' });
+        await kv.zadd('leaderboard', { score: 88, member: 'xhinzu' });
       }
+
       const dScore = await kv.zscore('leaderboard', 'Dingan');
       if (dScore === null || Number(dScore) < 45) {
         await kv.zadd('leaderboard', { score: 45, member: 'Dingan' });
@@ -65,13 +68,12 @@ export default async function handler(req, res) {
         }
 
         if (name) {
+          if (name === 'Xhinzu') {
+            try { await kv.zrem('leaderboard', 'Xhinzu'); } catch (e) {}
+            continue;
+          }
           if (blockedNames.includes(name.toLowerCase())) {
-            // Delete from Redis KV store
-            try {
-              await kv.zrem('leaderboard', name);
-            } catch (e) {
-              console.warn('Could not zrem blocked name:', name, e);
-            }
+            try { await kv.zrem('leaderboard', name); } catch (e) {}
             continue;
           }
           formattedList.push({ name, score });
@@ -79,33 +81,37 @@ export default async function handler(req, res) {
       }
     }
 
-    // Ensure Xhinzu is present with score 88 if not already in list
-    const hasXhinzu = formattedList.some(item => item.name.toLowerCase() === 'xhinzu');
-    if (!hasXhinzu) {
-      formattedList.push({ name: 'Xhinzu', score: 88 });
+    // Deduplicate case-insensitively
+    const dedupedMap = new Map();
+    formattedList.forEach(item => {
+      const lower = item.name.toLowerCase();
+      if (!dedupedMap.has(lower) || item.score > dedupedMap.get(lower).score) {
+        dedupedMap.set(lower, item);
+      }
+    });
+
+    const cleanList = Array.from(dedupedMap.values());
+
+    // Ensure lowercase xhinzu with score 88
+    const xItem = cleanList.find(item => item.name.toLowerCase() === 'xhinzu');
+    if (!xItem) {
+      cleanList.push({ name: 'xhinzu', score: 88 });
     } else {
-      formattedList.forEach(item => {
-        if (item.name.toLowerCase() === 'xhinzu' && item.score < 88) {
-          item.score = 88;
-        }
-      });
+      xItem.name = 'xhinzu'; // Force lowercase
+      if (xItem.score < 88) xItem.score = 88;
     }
 
-    // Ensure Dingan is present with score 45 if not already in list
-    const hasDingan = formattedList.some(item => item.name.toLowerCase() === 'dingan');
-    if (!hasDingan) {
-      formattedList.push({ name: 'Dingan', score: 45 });
-    } else {
-      formattedList.forEach(item => {
-        if (item.name.toLowerCase() === 'dingan' && item.score < 45) {
-          item.score = 45;
-        }
-      });
+    // Ensure Dingan with score 45
+    const dItem = cleanList.find(item => item.name.toLowerCase() === 'dingan');
+    if (!dItem) {
+      cleanList.push({ name: 'Dingan', score: 45 });
+    } else if (dItem.score < 45) {
+      dItem.score = 45;
     }
 
-    formattedList.sort((a, b) => b.score - a.score);
+    cleanList.sort((a, b) => b.score - a.score);
 
-    return res.status(200).json(formattedList.slice(0, 10));
+    return res.status(200).json(cleanList.slice(0, 10));
   } catch (error) {
     console.error('Error fetching leaderboard from Vercel Redis/KV:', error);
     return res.status(500).json({ error: 'Internal server error fetching leaderboard.' });

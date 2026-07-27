@@ -107,12 +107,13 @@ class LeaderboardManager {
       }
     }
 
-    // Ensure Xhinzu score 88
+    // Ensure lowercase xhinzu score 88
     const xIdx = list.findIndex(item => item.name.toLowerCase() === 'xhinzu');
     if (xIdx < 0) {
-      list.push({ name: 'Xhinzu', score: 88 });
-    } else if (list[xIdx].score < 88) {
-      list[xIdx].score = 88;
+      list.push({ name: 'xhinzu', score: 88 });
+    } else {
+      list[xIdx].name = 'xhinzu';
+      if (list[xIdx].score < 88) list[xIdx].score = 88;
     }
 
     // Ensure Dingan score 45
@@ -123,8 +124,18 @@ class LeaderboardManager {
       list[dIdx].score = 45;
     }
 
-    list.sort((a, b) => b.score - a.score);
-    return list;
+    // Deduplicate case-insensitively
+    const dedupedMap = new Map();
+    list.forEach(item => {
+      const lower = item.name.toLowerCase();
+      if (!dedupedMap.has(lower) || item.score > dedupedMap.get(lower).score) {
+        dedupedMap.set(lower, item);
+      }
+    });
+
+    const finalList = Array.from(dedupedMap.values());
+    finalList.sort((a, b) => b.score - a.score);
+    return finalList;
   }
 
   updateLocalLeaderboard(name, score) {
