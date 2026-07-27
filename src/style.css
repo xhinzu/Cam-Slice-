@@ -926,3 +926,159 @@ html, body {
   75% { opacity: 1; transform: translate(22px, -12px) rotate(60deg); }
   85%, 100% { opacity: 0; transform: translate(25px, -15px) rotate(70deg); }
 }
+
+/* ==========================================================================
+   Main Game Menu & Quit Screen
+   ========================================================================== */
+.menu-card {
+  max-width: 480px;
+  padding: 36px 28px;
+  gap: 16px;
+}
+
+.menu-title-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.menu-title-img {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  border-radius: var(--radius-md);
+  filter: drop-shadow(0 0 25px rgba(0, 242, 254, 0.4));
+  animation: floatTitle 3s ease-in-out infinite alternate;
+}
+
+@keyframes floatTitle {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8px); }
+}
+
+.player-welcome-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.icon-btn-inline {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: transform 0.2s;
+}
+
+.icon-btn-inline:hover {
+  transform: scale(1.2);
+}
+
+.current-mode-indicator {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-badge {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  color: var(--color-blade-neon);
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.menu-button-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.menu-btn-play {
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  padding: 16px;
+}
+
+.btn-danger {
+  background: rgba(255, 71, 87, 0.15);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.35);
+}
+
+.btn-danger:hover {
+  background: rgba(255, 71, 87, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Under Development Mode Card */
+.level-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.level-btn.dev-mode {
+  opacity: 0.65;
+  cursor: not-allowed;
+  position: relative;
+  border-style: dashed;
+}
+
+.level-btn.dev-mode:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dev-badge {
+  font-family: var(--font-heading);
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: var(--color-gold);
+  background: rgba(255, 165, 2, 0.15);
+  border: 1px solid var(--color-gold);
+  padding: 2px 6px;
+  border-radius: 10px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* ==========================================================================
+   Bottom Right Watermark
+   ========================================================================== */
+.vibe-watermark {
+  position: fixed;
+  bottom: 16px;
+  right: 20px;
+  z-index: 999;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+  user-select: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}

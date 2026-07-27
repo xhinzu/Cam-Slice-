@@ -57,12 +57,12 @@ class AppController {
     // 5. Bind User Interface Events
     this.bindEvents();
 
-    // 6. Navigate to initial state
+    // 6. Navigate to initial state (Main Menu)
     const savedName = this.ui.getPlayerName();
     if (!savedName) {
       this.ui.showNameEntry();
     } else {
-      this.ui.showLevelSelect(this.selectedLevel);
+      this.ui.showMainMenu(this.selectedLevel);
     }
   }
 
@@ -81,17 +81,55 @@ class AppController {
       }
     });
 
-    // "I Understand" Button on Tutorial Modal
+    // "I Understand" Button on Tutorial Modal -> Go to Main Menu
     if (this.ui.understandBtn) {
       this.ui.understandBtn.addEventListener('click', () => {
+        this.ui.showMainMenu(this.selectedLevel);
+      });
+    }
+
+    // MAIN MENU BUTTONS
+    if (this.ui.menuPlayBtn) {
+      this.ui.menuPlayBtn.addEventListener('click', () => {
+        this.ui.hideAllModals();
+        this.game.startNewGame(this.selectedLevel);
+      });
+    }
+
+    if (this.ui.menuModesBtn) {
+      this.ui.menuModesBtn.addEventListener('click', () => {
         this.ui.showLevelSelect(this.selectedLevel);
       });
     }
 
-    // "How to Play" Button on Level Select Modal
-    if (this.ui.viewTutorialBtn) {
-      this.ui.viewTutorialBtn.addEventListener('click', () => {
+    if (this.ui.menuTutorialBtn) {
+      this.ui.menuTutorialBtn.addEventListener('click', () => {
         this.ui.showTutorial();
+      });
+    }
+
+    if (this.ui.menuQuitBtn) {
+      this.ui.menuQuitBtn.addEventListener('click', () => {
+        try { window.close(); } catch (err) {}
+        this.ui.showQuit();
+      });
+    }
+
+    if (this.ui.menuEditNameBtn) {
+      this.ui.menuEditNameBtn.addEventListener('click', () => {
+        this.ui.showNameEntry();
+      });
+    }
+
+    if (this.ui.backToMenuBtn) {
+      this.ui.backToMenuBtn.addEventListener('click', () => {
+        this.ui.showMainMenu(this.selectedLevel);
+      });
+    }
+
+    if (this.ui.quitReturnBtn) {
+      this.ui.quitReturnBtn.addEventListener('click', () => {
+        this.ui.showMainMenu(this.selectedLevel);
       });
     }
 
@@ -102,15 +140,16 @@ class AppController {
       });
     }
 
-    // Level selection cards
+    // Level / Modes selection cards
     this.ui.levelBtns.forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.classList.contains('disabled')) return;
         this.selectedLevel = btn.dataset.level;
         this.ui.setLevelActive(this.selectedLevel);
       });
     });
 
-    // Start Game Button
+    // Start Game Button on Level Modal
     this.ui.startGameBtn.addEventListener('click', () => {
       this.ui.hideAllModals();
       this.game.startNewGame(this.selectedLevel);
@@ -127,9 +166,9 @@ class AppController {
       this.game.startNewGame(this.selectedLevel);
     });
 
-    // Game Over: Change Level Button
+    // Game Over: Change Level Button -> Goes to Main Menu
     this.ui.changeLevelBtn.addEventListener('click', () => {
-      this.ui.showLevelSelect(this.selectedLevel);
+      this.ui.showMainMenu(this.selectedLevel);
     });
   }
 

@@ -10,7 +10,9 @@ export class UIManager {
     this.loadingStatus = document.getElementById('loading-status');
     this.nameModal = document.getElementById('name-modal');
     this.tutorialModal = document.getElementById('tutorial-modal');
+    this.menuModal = document.getElementById('menu-modal');
     this.levelModal = document.getElementById('level-modal');
+    this.quitModal = document.getElementById('quit-modal');
     this.gameoverModal = document.getElementById('gameover-modal');
     this.cameraErrorModal = document.getElementById('camera-error-modal');
 
@@ -24,6 +26,17 @@ export class UIManager {
     this.toggleLBBtn = document.getElementById('toggle-lb-btn');
     this.leaderboardListEl = document.getElementById('leaderboard-list');
     this.screenFlashEl = document.getElementById('screen-flash');
+
+    // Main Menu Buttons & Tags
+    this.menuPlayBtn = document.getElementById('menu-play-btn');
+    this.menuModesBtn = document.getElementById('menu-modes-btn');
+    this.menuTutorialBtn = document.getElementById('menu-tutorial-btn');
+    this.menuQuitBtn = document.getElementById('menu-quit-btn');
+    this.menuPlayerName = document.getElementById('menu-player-name');
+    this.menuEditNameBtn = document.getElementById('menu-edit-name-btn');
+    this.menuSelectedModeTag = document.getElementById('menu-selected-mode-tag');
+    this.backToMenuBtn = document.getElementById('back-to-menu-btn');
+    this.quitReturnBtn = document.getElementById('quit-return-btn');
 
     // Form inputs & button refs
     this.nameForm = document.getElementById('name-form');
@@ -80,6 +93,19 @@ export class UIManager {
     this.nameModal.classList.remove('hidden');
   }
 
+  showMainMenu(currentLevel = 'medium') {
+    this.hideAllModals();
+    const name = this.getPlayerName() || 'Slicer';
+    if (this.menuPlayerName) this.menuPlayerName.textContent = name;
+    if (this.menuSelectedModeTag) this.menuSelectedModeTag.textContent = currentLevel.toUpperCase();
+    if (this.menuModal) this.menuModal.classList.remove('hidden');
+  }
+
+  showQuit() {
+    this.hideAllModals();
+    if (this.quitModal) this.quitModal.classList.remove('hidden');
+  }
+
   showTutorial() {
     this.hideAllModals();
     if (this.tutorialModal) {
@@ -104,6 +130,9 @@ export class UIManager {
         btn.classList.remove('active');
       }
     });
+    if (this.menuSelectedModeTag) {
+      this.menuSelectedModeTag.textContent = level.toUpperCase();
+    }
   }
 
   showGameOver(score, bestScore, isNewHighScore) {
@@ -129,7 +158,9 @@ export class UIManager {
     this.loadingModal.classList.add('hidden');
     this.nameModal.classList.add('hidden');
     if (this.tutorialModal) this.tutorialModal.classList.add('hidden');
+    if (this.menuModal) this.menuModal.classList.add('hidden');
     this.levelModal.classList.add('hidden');
+    if (this.quitModal) this.quitModal.classList.add('hidden');
     this.gameoverModal.classList.add('hidden');
     this.cameraErrorModal.classList.add('hidden');
   }

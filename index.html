@@ -154,11 +154,51 @@
       </div>
     </div>
 
-    <!-- Level Select Modal -->
+    <!-- Main Game Menu Modal -->
+    <div id="menu-modal" class="modal-overlay hidden">
+      <div class="modal-card menu-card glass-panel glow-border">
+        <div class="menu-title-container">
+          <img src="./title-logo.png" alt="Fruit Slice Live" class="menu-title-img">
+        </div>
+
+        <div class="player-welcome-badge">
+          <span>Welcome back, <strong id="menu-player-name" class="highlight-name">Slicer</strong>!</span>
+          <button id="menu-edit-name-btn" class="icon-btn-inline" title="Edit Slicer Name">✏️</button>
+        </div>
+
+        <div class="current-mode-indicator">
+          Selected Mode: <span id="menu-selected-mode-tag" class="mode-badge">MEDIUM</span>
+        </div>
+
+        <div class="menu-button-group">
+          <!-- Play Option: Starts the game -->
+          <button id="menu-play-btn" class="btn btn-primary btn-large btn-glow menu-btn-play">
+            ▶ PLAY GAME
+          </button>
+
+          <!-- Modes Option: Level Selection -->
+          <button id="menu-modes-btn" class="btn btn-secondary btn-large menu-btn-modes">
+            ⚙️ MODES
+          </button>
+
+          <!-- How to Play Option -->
+          <button id="menu-tutorial-btn" class="btn btn-secondary btn-large">
+            📖 HOW TO PLAY
+          </button>
+
+          <!-- Quit Option: Closes website -->
+          <button id="menu-quit-btn" class="btn btn-danger btn-large menu-btn-quit">
+            🚪 QUIT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level / Modes Select Modal -->
     <div id="level-modal" class="modal-overlay hidden">
       <div class="modal-card level-card glass-panel glow-border">
         <div class="slicer-greeting">Welcome, <span id="slicer-name-tag" class="highlight-name">Slicer</span>!</div>
-        <h2>Choose Difficulty Level</h2>
+        <h2>Choose Difficulty Mode</h2>
         
         <div class="level-grid">
           <button class="level-btn easy" data-level="easy">
@@ -178,15 +218,32 @@
             <div class="level-title">HARD</div>
             <div class="level-desc">Furious fall speed, multi-fruit frenzies, frequent bombs!</div>
           </button>
+
+          <button class="level-btn dev-mode disabled" disabled>
+            <div class="dev-badge">COMING SOON 🔒</div>
+            <div class="level-icon">🚧</div>
+            <div class="level-title">ZEN & BATTLES</div>
+            <div class="level-desc">Zen Mode (No Bombs) & Multiplayer Battles under development!</div>
+          </button>
         </div>
 
         <div class="modal-actions">
           <button id="start-game-btn" class="btn btn-primary btn-large btn-glow">🗡️ START SLICING</button>
           <div class="secondary-btn-row">
-            <button id="view-tutorial-btn" class="btn btn-secondary">📖 How to Play</button>
+            <button id="back-to-menu-btn" class="btn btn-secondary">⬅ Main Menu</button>
             <button id="change-name-btn" class="btn btn-secondary">Edit Name</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Quit Confirmation Modal -->
+    <div id="quit-modal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel glow-border">
+        <div class="logo-badge">🗡️ SESSION ENDED</div>
+        <h2>Thanks for Playing!</h2>
+        <p>You have quit Fruit Slice Live. You can close this browser tab or click below to return.</p>
+        <button id="quit-return-btn" class="btn btn-primary btn-glow">🔄 Return to Main Menu</button>
       </div>
     </div>
 
@@ -228,6 +285,11 @@
         </div>
         <button id="retry-camera-btn" class="btn btn-primary btn-glow">🔄 Retry Camera Access</button>
       </div>
+    </div>
+
+    <!-- Bottom Right Watermark -->
+    <div class="vibe-watermark">
+      ✨ vibe coded with antigravity
     </div>
 
   </div>
