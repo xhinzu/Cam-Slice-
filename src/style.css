@@ -137,15 +137,64 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: transform 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.hud-leaderboard.collapsed {
+  padding: 10px 14px;
+  max-height: 52px;
 }
 
 .leaderboard-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 8px;
+  transition: border-color 0.2s, padding-bottom 0.2s;
+}
+
+.hud-leaderboard.collapsed .leaderboard-header {
+  border-bottom-color: transparent;
+  padding-bottom: 0;
+}
+
+.lb-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-lb-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 1.05rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.toggle-lb-btn:hover {
+  background: rgba(0, 242, 254, 0.25);
+  border-color: var(--color-blade-neon);
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+}
+
+.toggle-lb-btn:active {
+  transform: scale(0.95);
+}
+
+.hud-leaderboard.collapsed .leaderboard-list {
+  display: none !important;
 }
 
 .leaderboard-header h3 {

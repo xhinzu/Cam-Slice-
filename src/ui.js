@@ -20,6 +20,8 @@ export class UIManager {
     this.comboBadgeEl = document.getElementById('combo-display');
     this.levelBadgeEl = document.getElementById('level-badge');
     this.livesContainer = document.getElementById('lives-display');
+    this.hudLeaderboard = document.getElementById('hud-leaderboard');
+    this.toggleLBBtn = document.getElementById('toggle-lb-btn');
     this.leaderboardListEl = document.getElementById('leaderboard-list');
     this.screenFlashEl = document.getElementById('screen-flash');
 
@@ -42,6 +44,15 @@ export class UIManager {
     this.highscoreBadgeEl = document.getElementById('highscore-badge');
 
     this.playerNameKey = 'fruit_slice_player_name';
+  }
+
+  toggleLeaderboard() {
+    if (!this.hudLeaderboard) return;
+    const isCollapsed = this.hudLeaderboard.classList.toggle('collapsed');
+    if (this.toggleLBBtn) {
+      this.toggleLBBtn.textContent = isCollapsed ? '🙈' : '👁️';
+      this.toggleLBBtn.title = isCollapsed ? 'Show Leaderboard' : 'Hide Leaderboard';
+    }
   }
 
   getPlayerName() {

@@ -95,6 +95,13 @@ class AppController {
       });
     }
 
+    // Toggle Leaderboard visibility (Eye Icon)
+    if (this.ui.toggleLBBtn) {
+      this.ui.toggleLBBtn.addEventListener('click', () => {
+        this.ui.toggleLeaderboard();
+      });
+    }
+
     // Level selection cards
     this.ui.levelBtns.forEach(btn => {
       btn.addEventListener('click', () => {
