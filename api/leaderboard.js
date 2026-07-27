@@ -27,8 +27,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Retrieve top 10 from sorted set 'leaderboard' descending
-    const rawResult = await kv.zrange('leaderboard', 0, 9, { rev: true, withScores: true });
+    const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
+
+    // Retrieve top 20 from sorted set 'leaderboard' descending
+    const rawResult = await kv.zrange('leaderboard', 0, 19, { rev: true, withScores: true });
 
     const formattedList = [];
 
@@ -36,22 +38,34 @@ export default async function handler(req, res) {
       // Handles both alternating array ['Name', score, ...] and object array [{ member, score }]
       for (let i = 0; i < rawResult.length; i++) {
         const item = rawResult[i];
+        let name = '';
+        let score = 0;
+
         if (typeof item === 'object' && item !== null && 'member' in item) {
-          formattedList.push({
-            name: item.member,
-            score: Number(item.score || 0)
-          });
+          name = item.member;
+          score = Number(item.score || 0);
         } else if (typeof item === 'string' && i + 1 < rawResult.length) {
-          formattedList.push({
-            name: item,
-            score: Number(rawResult[i + 1] || 0)
-          });
+          name = item;
+          score = Number(rawResult[i + 1] || 0);
           i++; // Skip score index
+        }
+
+        if (name) {
+          if (blockedNames.includes(name.toLowerCase())) {
+            // Delete from Redis KV store
+            try {
+              await kv.zrem('leaderboard', name);
+            } catch (e) {
+              console.warn('Could not zrem blocked name:', name, e);
+            }
+            continue;
+          }
+          formattedList.push({ name, score });
         }
       }
     }
 
-    return res.status(200).json(formattedList);
+    return res.status(200).json(formattedList.slice(0, 10));
   } catch (error) {
     console.error('Error fetching leaderboard from Vercel Redis/KV:', error);
     return res.status(500).json({ error: 'Internal server error fetching leaderboard.' });

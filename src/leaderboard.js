@@ -21,14 +21,17 @@ class LeaderboardManager {
   async refreshTopScores() {
     if (!this.activeCallback) return;
 
+    const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
+
     try {
       const response = await fetch('/api/leaderboard');
       if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
+          const cleanData = data.filter(item => item && item.name && !blockedNames.includes(item.name.toLowerCase()));
           // Sync with local cache
-          localStorage.setItem(this.localLeaderboardKey, JSON.stringify(data));
-          this.activeCallback(data);
+          localStorage.setItem(this.localLeaderboardKey, JSON.stringify(cleanData));
+          this.activeCallback(cleanData);
           return;
         }
       }
@@ -45,6 +48,9 @@ class LeaderboardManager {
    */
   async submitScore(name, score) {
     const cleanName = (name || 'Anonymous').trim().substring(0, 20);
+    const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
+    if (blockedNames.includes(cleanName.toLowerCase())) return 0;
+
     const pb = this.getPersonalBest();
 
     if (score > pb) {
@@ -87,9 +93,14 @@ class LeaderboardManager {
       try {
         const list = JSON.parse(stored);
         if (Array.isArray(list)) {
-          // Filter out legacy demo mock names if present
+          // Filter out legacy demo mock names & deleted names
           const demoNames = ['MasterNinja', 'BladeRunner', 'FruitSlayer', 'ZenSlicer', 'SamuraiJack', 'ShadowHand', 'SpeedDemon', 'SlashKing', 'ChopChop', 'RookieBlade'];
-          const cleanList = list.filter(item => item && item.name && !demoNames.includes(item.name));
+          const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
+          const cleanList = list.filter(item => {
+            if (!item || !item.name) return false;
+            const lower = item.name.toLowerCase();
+            return !demoNames.includes(item.name) && !blockedNames.includes(lower);
+          });
           return cleanList;
         }
       } catch (e) {
@@ -102,6 +113,9 @@ class LeaderboardManager {
   }
 
   updateLocalLeaderboard(name, score) {
+    const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
+    if (blockedNames.includes(name.toLowerCase())) return;
+
     const lb = this.getLocalLeaderboard();
     const existingIdx = lb.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
 

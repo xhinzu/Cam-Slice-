@@ -32,9 +32,10 @@ export default async function handler(req, res) {
 
     const cleanName = (name || '').trim().substring(0, 20);
     const numScore = Number(score);
+    const blockedNames = ['dingan', 'sreedev', 'zhinsu'];
 
-    if (!cleanName || isNaN(numScore) || numScore < 0 || numScore > 9999) {
-      return res.status(400).json({ error: 'Invalid name or score. Name must be non-empty string <= 20 chars, score 0-9999.' });
+    if (!cleanName || isNaN(numScore) || numScore < 0 || numScore > 9999 || blockedNames.includes(cleanName.toLowerCase())) {
+      return res.status(400).json({ error: 'Invalid or restricted player name.' });
     }
 
     // Check existing score in sorted set 'leaderboard'
