@@ -464,10 +464,23 @@ export class MultiplayerManager {
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' },
             { urls: 'stun:global.stun.twilio.com:3478' },
-            { urls: 'stun:stun.services.mozilla.com' }
+            { urls: 'stun:stun.services.mozilla.com' },
+            {
+              urls: 'turn:openrelay.metered.ca:80',
+              username: 'openrelay',
+              credential: 'openrelay'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443',
+              username: 'openrelay',
+              credential: 'openrelay'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+              username: 'openrelay',
+              credential: 'openrelay'
+            }
           ]
         }
       };
@@ -566,6 +579,15 @@ export class MultiplayerManager {
         if (matchEndsAt) {
           this.startMatchTimer(matchEndsAt);
         }
+      }
+
+      // Initiate WebRTC video calls if seeOthers is enabled
+      if (seeOthers && players) {
+        players.forEach(p => {
+          if (p.id !== this.myId && p.id !== 'connecting') {
+            this.callPeerVideo(p.id);
+          }
+        });
       }
 
       // Update PC Sidebar POV overlay and live score badges in real-time
