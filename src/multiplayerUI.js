@@ -120,12 +120,12 @@ export class MultiplayerUIManager {
       if (this.mpSeeOthersToggle) this.mpSeeOthersToggle.checked = state.seeOthers;
 
       const playerLength = state.players ? state.players.length : 0;
-      if (playerLength >= 2) {
+      if (playerLength >= 1) {
         this.mpStartMatchBtn.disabled = false;
         this.mpStartMatchBtn.textContent = '🚀 START MATCH';
       } else {
         this.mpStartMatchBtn.disabled = true;
-        this.mpStartMatchBtn.textContent = '⏳ Waiting for 2+ Players...';
+        this.mpStartMatchBtn.textContent = '⏳ Waiting for Players...';
       }
     } else {
       this.mpHostControls.classList.add('hidden');

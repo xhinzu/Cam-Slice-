@@ -27,8 +27,13 @@ export class MultiplayerManager {
   }
 
   getPartyHost() {
-    // Return custom VITE_PARTYKIT_HOST or default fallback
-    return import.meta.env?.VITE_PARTYKIT_HOST || window.location.host;
+    if (import.meta.env?.VITE_PARTYKIT_HOST) {
+      return import.meta.env.VITE_PARTYKIT_HOST;
+    }
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return '127.0.0.1:1999';
+    }
+    return window.location.host;
   }
 
   generateRoomCode() {
@@ -120,7 +125,10 @@ export class MultiplayerManager {
     // Host Controls: See Others Toggle
     if (this.mpUI.mpSeeOthersToggle) {
       this.mpUI.mpSeeOthersToggle.addEventListener('change', (e) => {
-        if (this.socket) {
+        if (this.roomState) {
+          this.roomState.seeOthers = e.target.checked;
+        }
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
           this.socket.send(
             JSON.stringify({
               type: 'set-see-others',
@@ -134,8 +142,13 @@ export class MultiplayerManager {
     // Host Controls: Start Match
     if (this.mpUI.mpStartMatchBtn) {
       this.mpUI.mpStartMatchBtn.addEventListener('click', () => {
-        if (this.socket) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
           this.socket.send(JSON.stringify({ type: 'start-match' }));
+        } else if (this.roomState) {
+          // Immediate local start fallback
+          this.roomState.matchState = 'playing';
+          this.roomState.matchEndsAt = Date.now() + 60000;
+          this.onRoomStateChanged();
         }
       });
     }
@@ -151,8 +164,16 @@ export class MultiplayerManager {
     // Results Modal Buttons
     if (this.mpUI.mpPlayAgainBtn) {
       this.mpUI.mpPlayAgainBtn.addEventListener('click', () => {
-        if (this.socket) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
           this.socket.send(JSON.stringify({ type: 'restart-lobby' }));
+        } else if (this.roomState) {
+          this.roomState.matchState = 'lobby';
+          this.roomState.matchEndsAt = null;
+          this.roomState.players.forEach((p) => {
+            p.score = 0;
+            p.ready = p.isHost;
+          });
+          this.onRoomStateChanged();
         }
       });
     }
@@ -197,8 +218,6 @@ export class MultiplayerManager {
   }
 
   fetchPublicRooms() {
-    // Simulated or fetched active public rooms
-    // Renders sample public rooms if none returned
     this.mpUI.renderPublicRooms([], (code) => {
       this.joinRoom(code);
     });
@@ -206,20 +225,62 @@ export class MultiplayerManager {
 
   createAndJoinRoom(roomCode, isPublic, difficulty) {
     this.currentRoomCode = roomCode;
+    this.myId = 'host-' + Math.random().toString(36).substring(2, 7);
+    const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+
+    // Immediately render Lobby UI for responsive feedback
+    this.roomState = {
+      roomCode,
+      isPublic,
+      difficulty,
+      seeOthers: true,
+      hostId: this.myId,
+      matchState: 'lobby',
+      matchEndsAt: null,
+      players: [
+        { id: this.myId, name: playerName, isHost: true, ready: true, score: 0 }
+      ]
+    };
+
+    this.mpUI.showLobby();
+    this.mpUI.renderLobbyState(this.roomState, this.myId);
+
+    // Connect to PartySocket in background
     this.connectToSocket(roomCode, () => {
-      this.socket.send(
-        JSON.stringify({
-          type: 'create-room-config',
-          isPublic,
-          difficulty,
-          seeOthers: true
-        })
-      );
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        this.socket.send(
+          JSON.stringify({
+            type: 'create-room-config',
+            isPublic,
+            difficulty,
+            seeOthers: true
+          })
+        );
+      }
     });
   }
 
   joinRoom(roomCode) {
     this.currentRoomCode = roomCode;
+    this.myId = 'guest-' + Math.random().toString(36).substring(2, 7);
+    const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+
+    this.roomState = {
+      roomCode,
+      isPublic: true,
+      difficulty: 'medium',
+      seeOthers: true,
+      hostId: '',
+      matchState: 'lobby',
+      matchEndsAt: null,
+      players: [
+        { id: this.myId, name: playerName, isHost: false, ready: true, score: 0 }
+      ]
+    };
+
+    this.mpUI.showLobby();
+    this.mpUI.renderLobbyState(this.roomState, this.myId);
+
     this.connectToSocket(roomCode);
   }
 
