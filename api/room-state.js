@@ -69,7 +69,7 @@ export default async function handler(req, res) {
         };
       } else if (action === 'join' && current) {
         if (!current.players) current.players = [];
-        const existingIdx = current.players.findIndex(p => p.id === player.id);
+        const existingIdx = current.players.findIndex(p => p.id === player.id || p.name === player.name);
         if (existingIdx >= 0) {
           current.players[existingIdx] = { ...current.players[existingIdx], ...player };
         } else if (current.players.length < 4) {
@@ -84,21 +84,34 @@ export default async function handler(req, res) {
         if (seeOthers !== undefined) current.seeOthers = seeOthers;
 
         if (player && current.players) {
-          const idx = current.players.findIndex(p => p.id === player.id);
+          let idx = current.players.findIndex(p => p.id === player.id);
+          if (idx < 0 && player.name) {
+            idx = current.players.findIndex(p => p.name === player.name);
+          }
+          if (idx < 0 && (player.isHost || (typeof player.id === 'string' && player.id.startsWith('host')))) {
+            idx = current.players.findIndex(p => p.isHost);
+          }
           if (idx >= 0) {
             current.players[idx] = { ...current.players[idx], ...player };
           }
         }
       } else if (action === 'score-update' && current) {
         if (player && current.players) {
-          const idx = current.players.findIndex(p => p.id === player.id);
+          let idx = current.players.findIndex(p => p.id === player.id);
+          if (idx < 0 && player.name) {
+            idx = current.players.findIndex(p => p.name === player.name);
+          }
+          if (idx < 0 && (player.isHost || (typeof player.id === 'string' && player.id.startsWith('host')))) {
+            idx = current.players.findIndex(p => p.isHost);
+          }
           if (idx >= 0) {
             current.players[idx].score = Math.max(0, Number(score) || 0);
+            if (player.id) current.players[idx].id = player.id;
           }
         }
       } else if (action === 'leave' && current && player) {
         if (current.players) {
-          current.players = current.players.filter(p => p.id !== player.id);
+          current.players = current.players.filter(p => p.id !== player.id && p.name !== player.name);
         }
       }
 

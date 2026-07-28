@@ -418,7 +418,11 @@ export class MultiplayerManager {
   }
 
   sendScoreToHost(score) {
-    const player = this.roomState?.players.find((p) => p.id === this.myId);
+    const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+    let player = this.roomState?.players.find((p) => p.id === this.myId);
+    if (!player && this.roomState?.players) {
+      player = this.roomState.players.find((p) => this.isHost ? p.isHost : p.name === playerName);
+    }
     if (player) {
       player.score = score;
     }
@@ -426,7 +430,11 @@ export class MultiplayerManager {
     this.pushRoomStateToServer({
       action: 'score-update',
       score,
-      player: { id: this.myId }
+      player: {
+        id: this.myId,
+        name: playerName,
+        isHost: this.isHost
+      }
     });
   }
 
