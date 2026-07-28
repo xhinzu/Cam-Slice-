@@ -230,7 +230,10 @@ export class MultiplayerUIManager {
           tile.innerHTML = `
             <div class="pov-video-wrapper">
               <video id="remote-video-${p.id}" autoplay playsinline muted></video>
-              <div id="no-cam-${p.id}" class="no-cam-overlay hidden">📷 Camera Unavailable</div>
+              <div id="no-cam-${p.id}" class="no-cam-overlay">
+                <span style="font-size: 1.8rem; margin-bottom: 2px;">🥷</span>
+                <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">Live Camera Feed</span>
+              </div>
             </div>
             <div class="pov-tile-footer">
               <span class="pov-player-name">${this.escapeHTML(p.name)}</span>
@@ -271,19 +274,31 @@ export class MultiplayerUIManager {
     const noCamEl = document.getElementById(`no-cam-${peerId}`);
 
     if (videoEl) {
+      const tracks = stream.getVideoTracks ? stream.getVideoTracks() : [];
+      if (tracks.length === 0) {
+        if (noCamEl) noCamEl.classList.remove('hidden');
+        return;
+      }
+
       videoEl.srcObject = stream;
       videoEl.autoplay = true;
       videoEl.playsInline = true;
       videoEl.muted = true;
       
+      const hideOverlay = () => {
+        if (noCamEl && videoEl.readyState >= 2) {
+          noCamEl.classList.add('hidden');
+        }
+      };
+
+      videoEl.onloadedmetadata = hideOverlay;
+      videoEl.onloadeddata = hideOverlay;
+      videoEl.onplaying = hideOverlay;
+
       const playPromise = videoEl.play();
       if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn(`Remote video play notice for peer ${peerId}:`, err);
-        });
+        playPromise.then(() => hideOverlay()).catch(() => {});
       }
-
-      if (noCamEl) noCamEl.classList.add('hidden');
     }
   }
 

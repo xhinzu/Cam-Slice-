@@ -439,11 +439,18 @@ export class MultiplayerManager {
   }
 
   getLocalCameraStream() {
-    if (this.game?.camera?.stream && this.game.camera.stream.active) {
-      return this.game.camera.stream;
+    if (this.game?.camera?.stream) {
+      const tracks = this.game.camera.stream.getVideoTracks ? this.game.camera.stream.getVideoTracks() : [];
+      if (tracks && tracks.length > 0) {
+        return this.game.camera.stream;
+      }
     }
     if (this.game?.camera?.video?.srcObject) {
-      return this.game.camera.video.srcObject;
+      const srcStream = this.game.camera.video.srcObject;
+      const tracks = srcStream.getVideoTracks ? srcStream.getVideoTracks() : [];
+      if (tracks && tracks.length > 0) {
+        return srcStream;
+      }
     }
     return null;
   }
