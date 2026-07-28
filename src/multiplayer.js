@@ -185,45 +185,32 @@ export class MultiplayerManager {
   }
 
   copyTextToClipboard(text, btnEl, successLabel, defaultHTML) {
-    if (!text) return;
+    const targetText = text || this.currentRoomCode || document.getElementById('mp-lobby-code')?.textContent || '';
+    if (!targetText) return;
 
-    const fallbackCopy = (str) => {
-      const el = document.createElement('textarea');
-      el.value = str;
-      el.setAttribute('readonly', '');
-      el.style.position = 'fixed';
-      el.style.left = '-9999px';
-      el.style.top = '-9999px';
-      document.body.appendChild(el);
-      el.focus();
-      el.select();
-      try {
-        document.execCommand('copy');
-      } catch (err) {
-        console.error('Fallback copy error:', err);
-      }
-      document.body.removeChild(el);
-    };
+    let copied = false;
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = targetText;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      copied = document.execCommand('copy');
+      document.body.removeChild(textarea);
+    } catch (e) {}
 
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => {
-        if (btnEl) {
-          btnEl.innerHTML = successLabel;
-          setTimeout(() => { btnEl.innerHTML = defaultHTML; }, 2000);
-        }
-      }).catch(() => {
-        fallbackCopy(text);
-        if (btnEl) {
-          btnEl.innerHTML = successLabel;
-          setTimeout(() => { btnEl.innerHTML = defaultHTML; }, 2000);
-        }
-      });
-    } else {
-      fallbackCopy(text);
-      if (btnEl) {
-        btnEl.innerHTML = successLabel;
-        setTimeout(() => { btnEl.innerHTML = defaultHTML; }, 2000);
-      }
+    if (!copied && navigator.clipboard) {
+      navigator.clipboard.writeText(targetText).catch(() => {});
+    }
+
+    if (btnEl) {
+      btnEl.innerHTML = successLabel;
+      setTimeout(() => {
+        btnEl.innerHTML = defaultHTML;
+      }, 2000);
     }
   }
 
@@ -254,47 +241,34 @@ export class MultiplayerManager {
     }
   }
 
-  fetchPublicRooms() {
+  async fetchPublicRooms() {
     const publicRooms = [];
 
-    // Check local storage cache first
+    // Query Vercel KV public rooms API
+    try {
+      const res = await fetch('/api/public-rooms');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.rooms)) {
+          data.rooms.forEach(r => publicRooms.push(r));
+        }
+      }
+    } catch (e) {}
+
+    // Check local storage cache fallback
     try {
       const raw = localStorage.getItem('fruit_slice_recent_public_room');
       if (raw) {
         const item = JSON.parse(raw);
         if (Date.now() - item.timestamp < 1800000) { // 30 mins
-          publicRooms.push(item);
+          if (!publicRooms.some(p => p.code === item.code)) {
+            publicRooms.push(item);
+          }
         }
       }
     } catch (e) {}
 
-    // Query global PartyKit lobby socket
-    try {
-      const lobbySocket = new PartySocket({ host: this.getPartyHost(), room: 'lobby' });
-      lobbySocket.addEventListener('open', () => {
-        lobbySocket.send(JSON.stringify({ type: 'get-public-rooms' }));
-      });
-      lobbySocket.addEventListener('message', (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'public-rooms-list' && Array.isArray(msg.rooms)) {
-            msg.rooms.forEach(r => {
-              if (!publicRooms.some(p => p.code === r.code)) {
-                publicRooms.push(r);
-              }
-            });
-            this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
-            lobbySocket.close();
-          }
-        } catch (e) {}
-      });
-
-      setTimeout(() => {
-        this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
-      }, 1000);
-    } catch (e) {
-      this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
-    }
+    this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
   }
 
   createAndJoinRoom(roomCode, isPublic, difficulty) {
@@ -316,15 +290,24 @@ export class MultiplayerManager {
     };
 
     if (isPublic) {
+      const publicRoomObj = {
+        code: roomCode,
+        hostName: playerName,
+        difficulty,
+        playerCount: 1,
+        timestamp: Date.now()
+      };
+
       try {
-        const publicRoomObj = {
-          code: roomCode,
-          hostName: playerName,
-          difficulty,
-          playerCount: 1,
-          timestamp: Date.now()
-        };
         localStorage.setItem('fruit_slice_recent_public_room', JSON.stringify(publicRoomObj));
+      } catch (e) {}
+
+      try {
+        fetch('/api/public-rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(publicRoomObj)
+        }).catch(() => {});
       } catch (e) {}
     }
 
