@@ -521,34 +521,45 @@ export class MultiplayerManager {
     const { matchState, players, seeOthers, difficulty, matchEndsAt } = this.roomState;
 
     if (matchState === 'lobby') {
-      this.game.stopGame();
-      this.mpUI.hideSidebarPOV();
-      this.mpUI.hideTimerHUD();
-
+      if (this.activeMatchState !== 'lobby') {
+        this.activeMatchState = 'lobby';
+        this.game.stopGame();
+        this.mpUI.hideSidebarPOV();
+        this.mpUI.hideTimerHUD();
+        this.stopMatchTimer();
+      }
       this.mpUI.showLobby();
       this.mpUI.renderLobbyState(this.roomState, this.myId);
+
     } else if (matchState === 'playing') {
       this.appUI.hideAllModals();
       this.mpUI.hideAllMPModals();
 
-      // Launch 60-second multiplayer match
-      this.game.stopGame();
-      this.game.startMultiplayerGame(difficulty, (newScore) => {
-        this.sendScoreToHost(newScore);
-      });
+      // Launch 60-second multiplayer match ONLY ONCE when entering playing state
+      if (this.activeMatchState !== 'playing') {
+        this.activeMatchState = 'playing';
+        this.game.stopGame();
+        this.game.startMultiplayerGame(difficulty, (newScore) => {
+          this.sendScoreToHost(newScore);
+        });
+        if (matchEndsAt) {
+          this.startMatchTimer(matchEndsAt);
+        }
+      }
 
-      // Render PC Sidebar POV overlay
+      // Update PC Sidebar POV overlay and live score badges in real-time
       this.mpUI.renderSidebarPOV(players, this.myId, seeOthers, this.isPC);
 
-      // Start authoritative Match Timer
-      this.startMatchTimer(matchEndsAt);
     } else if (matchState === 'ended') {
-      this.game.stopGame();
-      this.stopMatchTimer();
+      if (this.activeMatchState !== 'ended') {
+        this.activeMatchState = 'ended';
+        this.game.stopGame();
+        this.stopMatchTimer();
 
-      const isHost = this.roomState.hostId === this.myId || this.isHost;
-      this.mpUI.renderResults(players, isHost);
-      this.mpUI.showResults();
+        const isHost = this.roomState.hostId === this.myId || this.isHost;
+        this.mpUI.renderResults(players, isHost);
+        this.mpUI.showResults();
+      }
     }
   }
 
@@ -564,6 +575,11 @@ export class MultiplayerManager {
 
       if (remainingMs <= 0) {
         this.stopMatchTimer();
+        if (this.isHost && this.roomState && this.roomState.matchState === 'playing') {
+          this.roomState.matchState = 'ended';
+          this.pushRoomStateToServer({ action: 'update', matchState: 'ended' });
+          this.onRoomStateChanged();
+        }
       }
     };
 
@@ -607,5 +623,6 @@ export class MultiplayerManager {
     this.roomState = null;
     this.myId = null;
     this.isHost = false;
+    this.activeMatchState = null;
   }
 }
