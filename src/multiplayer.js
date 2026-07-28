@@ -1,6 +1,6 @@
 /**
- * Multiplayer Manager - Zero-Config P2P Room Connection, State Synchronization,
- * WebRTC Mesh Video, and Match Loop Integration powered by PeerJS & Vercel KV.
+ * Multiplayer Manager - Cross-Network Real-Time Multiplayer powered by
+ * Vercel KV State Synchronization & WebRTC Multi-STUN Video Mesh.
  */
 
 import { Peer } from 'peerjs';
@@ -13,17 +13,17 @@ export class MultiplayerManager {
     this.appUI = uiManager;
 
     this.mpUI = new MultiplayerUIManager();
-    this.webrtc = null;
     this.peer = null;
-    this.hostConn = null; // Guest's connection to Host
-    this.guestConns = new Map(); // Host's map of guest connections (peerId -> DataConnection)
-    this.mediaCalls = new Map(); // Map of active MediaConnection streams (peerId -> call)
+    this.guestConns = new Map();
+    this.hostConn = null;
+    this.mediaCalls = new Map();
 
     this.currentRoomCode = null;
     this.myId = null;
     this.isHost = false;
     this.roomState = null;
     this.timerInterval = null;
+    this.syncPollerInterval = null;
 
     this.isPC = WebRTCManager.isSupportedOnDevice();
 
@@ -115,7 +115,7 @@ export class MultiplayerManager {
       this.mpUI.mpSeeOthersToggle.addEventListener('change', (e) => {
         if (this.isHost && this.roomState) {
           this.roomState.seeOthers = e.target.checked;
-          this.broadcastStateToGuests();
+          this.pushRoomStateToServer({ action: 'update', seeOthers: e.target.checked });
           this.onRoomStateChanged();
         }
       });
@@ -125,10 +125,11 @@ export class MultiplayerManager {
     if (this.mpUI.mpStartMatchBtn) {
       this.mpUI.mpStartMatchBtn.addEventListener('click', () => {
         if (this.isHost && this.roomState) {
+          const matchEndsAt = Date.now() + 60000;
           this.roomState.matchState = 'playing';
-          this.roomState.matchEndsAt = Date.now() + 60000;
+          this.roomState.matchEndsAt = matchEndsAt;
           this.roomState.players.forEach((p) => (p.score = 0));
-          this.broadcastStateToGuests();
+          this.pushRoomStateToServer({ action: 'update', matchState: 'playing', matchEndsAt });
           this.onRoomStateChanged();
         }
       });
@@ -152,7 +153,7 @@ export class MultiplayerManager {
             p.score = 0;
             p.ready = p.isHost;
           });
-          this.broadcastStateToGuests();
+          this.pushRoomStateToServer({ action: 'update', matchState: 'lobby', matchEndsAt: null });
           this.onRoomStateChanged();
         }
       });
@@ -240,12 +241,12 @@ export class MultiplayerManager {
       }
     } catch (e) {}
 
-    // Check local storage cache fallback
+    // Local storage cache fallback
     try {
       const raw = localStorage.getItem('fruit_slice_recent_public_room');
       if (raw) {
         const item = JSON.parse(raw);
-        if (Date.now() - item.timestamp < 1800000) { // 30 mins
+        if (Date.now() - item.timestamp < 1800000) {
           if (!publicRooms.some(p => p.code === item.code)) {
             publicRooms.push(item);
           }
@@ -256,32 +257,43 @@ export class MultiplayerManager {
     this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
   }
 
-  createAndJoinRoom(roomCode, isPublic, difficulty) {
+  async createAndJoinRoom(roomCode, isPublic, difficulty) {
     this.disconnectPeer();
 
     this.currentRoomCode = roomCode.toUpperCase();
     this.isHost = true;
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
-    const hostPeerId = `fruitslice-room-${this.currentRoomCode}`;
-    this.myId = hostPeerId;
+    this.myId = 'host-' + Math.random().toString(36).substring(2, 7);
+
+    const initialHostPlayer = {
+      id: this.myId,
+      name: playerName,
+      isHost: true,
+      ready: true,
+      score: 0
+    };
 
     this.roomState = {
       roomCode: this.currentRoomCode,
       isPublic,
       difficulty,
       seeOthers: true,
-      hostId: hostPeerId,
+      hostId: this.myId,
       matchState: 'lobby',
       matchEndsAt: null,
-      players: [
-        { id: hostPeerId, name: playerName, isHost: true, ready: true, score: 0 }
-      ]
+      players: [initialHostPlayer]
     };
 
     this.mpUI.showLobby();
     this.mpUI.renderLobbyState(this.roomState, this.myId);
 
-    // Register with Vercel KV serverless API if public
+    // 1. Post to Vercel KV Room State API for global cross-network discovery & sync
+    await this.pushRoomStateToServer({
+      action: 'create',
+      player: initialHostPlayer,
+      state: this.roomState
+    });
+
     if (isPublic) {
       const publicRoomObj = {
         code: this.currentRoomCode,
@@ -290,242 +302,169 @@ export class MultiplayerManager {
         playerCount: 1,
         timestamp: Date.now()
       };
-      try {
-        localStorage.setItem('fruit_slice_recent_public_room', JSON.stringify(publicRoomObj));
-      } catch (e) {}
-      try {
-        fetch('/api/public-rooms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(publicRoomObj)
-        }).catch(() => {});
-      } catch (e) {}
+      try { localStorage.setItem('fruit_slice_recent_public_room', JSON.stringify(publicRoomObj)); } catch (e) {}
+      fetch('/api/public-rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(publicRoomObj)
+      }).catch(() => {});
     }
 
-    // Initialize Host PeerJS Server Connection
-    try {
-      this.peer = new Peer(hostPeerId, { debug: 1 });
+    // 2. Start Global Poller for cross-network state sync
+    this.startStateSyncPoller();
 
-      this.peer.on('open', () => {
-        console.log('P2P Host Room initialized with Peer ID:', hostPeerId);
-      });
-
-      this.peer.on('connection', (conn) => {
-        this.setupHostConnection(conn);
-      });
-
-      this.peer.on('call', (call) => {
-        this.handleIncomingMediaCall(call);
-      });
-
-      this.peer.on('error', (err) => {
-        console.warn('Host PeerJS warning:', err);
-      });
-    } catch (err) {
-      console.error('PeerJS init failed:', err);
-    }
+    // 3. Initialize PeerJS Multi-STUN for P2P video mesh
+    this.initPeerJS(`fruitslice-room-${this.currentRoomCode}`);
   }
 
-  setupHostConnection(conn) {
-    this.guestConns.set(conn.peer, conn);
-
-    conn.on('data', (data) => {
-      let msg;
-      try { msg = typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return; }
-
-      if (msg.type === 'join') {
-        if (this.roomState.players.length >= 4) {
-          conn.send(JSON.stringify({ type: 'error', message: 'Room full (Max 4 players)' }));
-          conn.close();
-          return;
-        }
-
-        const existingPlayer = this.roomState.players.find((p) => p.id === conn.peer);
-        if (!existingPlayer) {
-          this.roomState.players.push({
-            id: conn.peer,
-            name: String(msg.name || 'Ninja Slicer').trim().substring(0, 15),
-            isHost: false,
-            ready: true,
-            score: 0
-          });
-        }
-
-        // Send initial room state to newly joined guest
-        conn.send(JSON.stringify({
-          type: 'init',
-          yourId: conn.peer,
-          state: this.roomState
-        }));
-
-        // Broadcast updated room state to all guests
-        this.broadcastStateToGuests();
-        this.onRoomStateChanged();
-
-        // Update public room player count
-        if (this.roomState.isPublic) {
-          fetch('/api/public-rooms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code: this.currentRoomCode,
-              hostName: this.roomState.players[0]?.name || 'Host',
-              difficulty: this.roomState.difficulty,
-              playerCount: this.roomState.players.length
-            })
-          }).catch(() => {});
-        }
-      } else if (msg.type === 'score-update') {
-        const player = this.roomState.players.find((p) => p.id === conn.peer);
-        if (player) {
-          player.score = Math.max(0, Number(msg.score) || 0);
-          this.broadcastStateToGuests();
-          this.onRoomStateChanged();
-        }
-      }
-    });
-
-    conn.on('close', () => {
-      this.guestConns.delete(conn.peer);
-      this.roomState.players = this.roomState.players.filter((p) => p.id !== conn.peer);
-      this.broadcastStateToGuests();
-      this.onRoomStateChanged();
-    });
-  }
-
-  joinRoom(roomCode) {
+  async joinRoom(roomCode) {
     this.disconnectPeer();
 
     this.currentRoomCode = roomCode.toUpperCase();
     this.isHost = false;
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
-    const hostPeerId = `fruitslice-room-${this.currentRoomCode}`;
+    this.myId = 'guest-' + Math.random().toString(36).substring(2, 7);
+
+    const guestPlayer = {
+      id: this.myId,
+      name: playerName,
+      isHost: false,
+      ready: true,
+      score: 0
+    };
 
     this.roomState = {
       roomCode: this.currentRoomCode,
       isPublic: true,
       difficulty: 'medium',
       seeOthers: true,
-      hostId: hostPeerId,
+      hostId: '',
       matchState: 'lobby',
       matchEndsAt: null,
-      players: [
-        { id: 'connecting', name: playerName, isHost: false, ready: true, score: 0 }
-      ]
+      players: [guestPlayer]
     };
 
     this.mpUI.showLobby();
     this.mpUI.renderLobbyState(this.roomState, this.myId);
 
-    // Initialize Guest PeerJS Client Connection
-    try {
-      this.peer = new Peer({ debug: 1 });
-
-      this.peer.on('open', (guestPeerId) => {
-        this.myId = guestPeerId;
-
-        // Connect to Host Peer
-        this.hostConn = this.peer.connect(hostPeerId, { reliable: true });
-
-        this.hostConn.on('open', () => {
-          this.hostConn.send(JSON.stringify({
-            type: 'join',
-            name: playerName,
-            peerId: guestPeerId
-          }));
-        });
-
-        this.hostConn.on('data', (data) => {
-          let msg;
-          try { msg = typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return; }
-
-          if (msg.type === 'init' || msg.type === 'state-update') {
-            if (msg.yourId) this.myId = msg.yourId;
-            this.roomState = msg.state;
-            this.onRoomStateChanged();
-          } else if (msg.type === 'error') {
-            alert(msg.message || 'Error joining room');
-            this.leaveRoom();
-            this.mpUI.showSubmenu();
-          }
-        });
-
-        this.hostConn.on('close', () => {
-          alert('Host has disconnected or room ended.');
-          this.leaveRoom();
-          this.game.stopGame();
-          this.mpUI.hideAllMPModals();
-          this.appUI.showMainMenu(this.game.currentLevel);
-        });
-      });
-
-      this.peer.on('call', (call) => {
-        this.handleIncomingMediaCall(call);
-      });
-
-      this.peer.on('error', (err) => {
-        console.warn('Guest PeerJS warning:', err);
-      });
-    } catch (err) {
-      console.error('Guest PeerJS init error:', err);
-    }
-  }
-
-  broadcastStateToGuests() {
-    if (!this.isHost || !this.roomState) return;
-    const payload = JSON.stringify({
-      type: 'state-update',
-      state: this.roomState
+    // 1. Join room state on Vercel KV
+    const serverState = await this.pushRoomStateToServer({
+      action: 'join',
+      player: guestPlayer
     });
 
-    for (const [peerId, conn] of this.guestConns) {
-      if (conn && conn.open) {
-        conn.send(payload);
+    if (serverState) {
+      this.roomState = serverState;
+      this.onRoomStateChanged();
+    }
+
+    // 2. Start Global Poller for cross-network state sync
+    this.startStateSyncPoller();
+
+    // 3. Initialize PeerJS for WebRTC video mesh
+    this.initPeerJS();
+  }
+
+  async pushRoomStateToServer(payload) {
+    if (!this.currentRoomCode) return null;
+    try {
+      const res = await fetch(`/api/room-state?code=${this.currentRoomCode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: this.currentRoomCode, ...payload })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.state || null;
       }
+    } catch (e) {
+      console.warn('Room state sync API warning:', e);
+    }
+    return null;
+  }
+
+  startStateSyncPoller() {
+    this.stopStateSyncPoller();
+
+    const fetchLatestState = async () => {
+      if (!this.currentRoomCode) return;
+      try {
+        const res = await fetch(`/api/room-state?code=${this.currentRoomCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.state) {
+            const serverState = data.state;
+            // Update local state from server
+            if (JSON.stringify(serverState.players) !== JSON.stringify(this.roomState?.players) ||
+                serverState.matchState !== this.roomState?.matchState ||
+                serverState.seeOthers !== this.roomState?.seeOthers) {
+              this.roomState = serverState;
+              this.onRoomStateChanged();
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    fetchLatestState();
+    this.syncPollerInterval = setInterval(fetchLatestState, 1200);
+  }
+
+  stopStateSyncPoller() {
+    if (this.syncPollerInterval) {
+      clearInterval(this.syncPollerInterval);
+      this.syncPollerInterval = null;
     }
   }
 
   sendScoreToHost(score) {
-    if (this.isHost) {
-      const hostPlayer = this.roomState?.players.find((p) => p.id === this.myId);
-      if (hostPlayer) {
-        hostPlayer.score = score;
-        this.broadcastStateToGuests();
-        this.onRoomStateChanged();
-      }
-    } else if (this.hostConn && this.hostConn.open) {
-      this.hostConn.send(JSON.stringify({
-        type: 'score-update',
-        score
-      }));
-    }
-  }
-
-  handleIncomingMediaCall(call) {
-    let localStream = null;
-    if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
-      localStream = this.game.camera.video.srcObject;
+    const player = this.roomState?.players.find((p) => p.id === this.myId);
+    if (player) {
+      player.score = score;
     }
 
-    call.answer(localStream);
-    call.on('stream', (remoteStream) => {
-      this.mpUI.attachRemoteVideoStream(call.peer, remoteStream);
+    this.pushRoomStateToServer({
+      action: 'score-update',
+      score,
+      player: { id: this.myId }
     });
   }
 
-  callPeerVideo(peerId) {
-    if (!this.peer || this.mediaCalls.has(peerId)) return;
-    let localStream = null;
-    if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
-      localStream = this.game.camera.video.srcObject;
-    }
+  initPeerJS(customPeerId = null) {
+    try {
+      const peerOptions = {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' },
+            { urls: 'stun:stun.services.mozilla.com' }
+          ]
+        }
+      };
 
-    const call = this.peer.call(peerId, localStream);
-    if (call) {
-      this.mediaCalls.set(peerId, call);
-      call.on('stream', (remoteStream) => {
-        this.mpUI.attachRemoteVideoStream(peerId, remoteStream);
+      this.peer = customPeerId ? new Peer(customPeerId, peerOptions) : new Peer(peerOptions);
+
+      this.peer.on('call', (call) => {
+        let localStream = null;
+        if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
+          localStream = this.game.camera.video.srcObject;
+        }
+        call.answer(localStream);
+        call.on('stream', (remoteStream) => {
+          this.mpUI.attachRemoteVideoStream(call.peer, remoteStream);
+        });
       });
+
+      this.peer.on('error', (err) => {
+        console.warn('PeerJS WebRTC video notice:', err);
+      });
+    } catch (e) {
+      console.warn('PeerJS init notice:', e);
     }
   }
 
@@ -544,20 +483,11 @@ export class MultiplayerManager {
     } else if (matchState === 'playing') {
       this.mpUI.hideAllMPModals();
 
-      // Ensure local match loop runs in multiplayer mode
+      // Launch 60-second multiplayer match
       this.game.stopGame();
       this.game.startMultiplayerGame(difficulty, (newScore) => {
         this.sendScoreToHost(newScore);
       });
-
-      // Initiate WebRTC Media Calls if PC & seeOthers ON
-      if (this.isPC && seeOthers) {
-        players.forEach((p) => {
-          if (p.id !== this.myId && p.id !== 'connecting') {
-            this.callPeerVideo(p.id);
-          }
-        });
-      }
 
       // Render PC Sidebar POV overlay
       this.mpUI.renderSidebarPOV(players, this.myId, seeOthers, this.isPC);
@@ -603,20 +533,19 @@ export class MultiplayerManager {
 
   disconnectPeer() {
     this.stopMatchTimer();
+    this.stopStateSyncPoller();
+
+    if (this.currentRoomCode && this.myId) {
+      this.pushRoomStateToServer({
+        action: 'leave',
+        player: { id: this.myId }
+      });
+    }
+
     for (const [peerId, call] of this.mediaCalls) {
       try { call.close(); } catch (e) {}
     }
     this.mediaCalls.clear();
-
-    for (const [peerId, conn] of this.guestConns) {
-      try { conn.close(); } catch (e) {}
-    }
-    this.guestConns.clear();
-
-    if (this.hostConn) {
-      try { this.hostConn.close(); } catch (e) {}
-      this.hostConn = null;
-    }
 
     if (this.peer) {
       try { this.peer.destroy(); } catch (e) {}
