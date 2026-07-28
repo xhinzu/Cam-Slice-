@@ -1722,6 +1722,21 @@ input:checked + .slider:before {
   border-top-color: #e67e22;
 }
 
+/* Multiplayer Button Gradient */
+.capsule-mp {
+  background: linear-gradient(180deg, #00d2d3 0%, #0abde3 55%, #01a3a4 100%);
+  border-color: #a4b0be;
+}
+
+.capsule-mp .capsule-text {
+  color: #042d3a;
+  font-size: 1.85rem;
+}
+
+.capsule-mp .capsule-tail {
+  border-top-color: #0abde3;
+}
+
 /* Quit Button Gradient */
 .capsule-quit {
   background: linear-gradient(180deg, #e74c3c 0%, #c0392b 55%, #962d22 100%);
