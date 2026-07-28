@@ -218,7 +218,19 @@ export class UIManager {
     }, 1200);
   }
 
-  updateHUDLives(remainingLives) {
+  updateHUDLives(remainingLives, isFreestyle = false) {
+    if (!this.livesContainer) return;
+    if (isFreestyle || remainingLives >= 900) {
+      this.livesContainer.innerHTML = '<span class="freestyle-hud-tag">♾️ UNLIMITED</span>';
+      return;
+    }
+
+    this.livesContainer.innerHTML = `
+      <span class="heart active">❤️</span>
+      <span class="heart active">❤️</span>
+      <span class="heart active">❤️</span>
+    `;
+
     const hearts = this.livesContainer.querySelectorAll('.heart');
     hearts.forEach((heart, idx) => {
       if (idx < remainingLives) {

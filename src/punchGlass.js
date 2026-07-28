@@ -356,7 +356,7 @@ export class PunchTheGlassManager {
     const w = bounds.cellWidth - 12;
     const h = bounds.cellHeight - 12;
 
-    const isRed = Math.random() < config.redChance;
+    const isRed = (Math.random() < config.redChance) && this.game.currentLevel !== 'freestyle';
     const type = isRed ? 'red' : 'green';
 
     this.panes.push(new GlassPane(cellIndex, row, col, x, y, w, h, type, config.lifespan));
@@ -391,14 +391,14 @@ export class PunchTheGlassManager {
       sounds.playBomb();
       this.game.ui.triggerScreenFlash();
       this.game.shakeDuration = 15;
-      if (!this.game.isMultiplayer) {
+      if (!this.game.isMultiplayer && this.game.currentLevel !== 'freestyle') {
         this.game.lives--;
         this.game.ui.updateHUDLives(this.game.lives);
 
         if (this.game.lives <= 0) {
           this.game.triggerGameOver();
         }
-      } else {
+      } else if (this.game.isMultiplayer) {
         this.game.score = Math.max(0, this.game.score - 2);
         this.game.ui.updateHUDScore(this.game.score);
         if (typeof this.game.onMultiplayerSlice === 'function') {

@@ -166,6 +166,17 @@ class AppController {
       });
     }
 
+    const hudExitBtn = document.getElementById('hud-exit-btn');
+    if (hudExitBtn) {
+      hudExitBtn.addEventListener('click', () => {
+        if (this.game.isPlaying) {
+          this.game.triggerGameOver();
+        } else {
+          this.ui.showMainMenu(this.selectedLevel);
+        }
+      });
+    }
+
     // Mode Selection Cards (Fruit Slice vs Punch Glass)
     this.ui.modeCards.forEach(card => {
       card.addEventListener('click', () => {

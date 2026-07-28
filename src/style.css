@@ -498,8 +498,8 @@ html, body {
 
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   width: 100%;
   margin: 10px 0;
 }
@@ -508,11 +508,11 @@ html, body {
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
-  padding: 16px 12px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   transition: all 0.25s;
   color: #ffffff;
@@ -527,6 +527,45 @@ html, body {
   border-color: var(--color-blade-neon);
   background: rgba(0, 242, 254, 0.12);
   box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+}
+
+.level-btn.freestyle.active {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+.freestyle-hud-tag {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  padding: 4px 10px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+}
+
+.hud-exit-btn {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(239, 68, 68, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 4px 12px;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s, background 0.2s;
+  margin-bottom: 4px;
+}
+
+.hud-exit-btn:hover {
+  transform: scale(1.08);
+  background: #dc2626;
 }
 
 .level-icon {

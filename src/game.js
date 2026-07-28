@@ -25,6 +25,12 @@ export const DIFFICULTY_CONFIGS = {
     fallSpeed: 1.65,
     burstCount: [2, 3],
     bombChance: 0.35
+  },
+  freestyle: {
+    spawnInterval: 750,
+    fallSpeed: 1.20,
+    burstCount: [1, 2],
+    bombChance: 0.0
   }
 };
 
@@ -77,7 +83,7 @@ export class GameManager {
     this.isMultiplayer = false;
     this.onMultiplayerSlice = null;
     this.score = 0;
-    this.lives = 3;
+    this.lives = (level === 'freestyle') ? 999 : 3;
     this.fruits = [];
     this.slicedHalves = [];
     this.particles = [];
@@ -89,7 +95,7 @@ export class GameManager {
     }
 
     this.ui.updateHUDScore(0);
-    this.ui.updateHUDLives(3);
+    this.ui.updateHUDLives(this.lives, level === 'freestyle');
     this.ui.updateLevelBadge(level);
     this.ui.setHUDVisible(true);
 
@@ -217,7 +223,7 @@ export class GameManager {
 
       // Check offscreen fall (missed fruit)
       if (fruit.markedForDeletion) {
-        if (!fruit.sliced && fruit.type === 'fruit' && !this.isMultiplayer) {
+        if (!fruit.sliced && fruit.type === 'fruit' && !this.isMultiplayer && this.currentLevel !== 'freestyle') {
           this.lives--;
           this.ui.updateHUDLives(this.lives);
           if (this.lives <= 0) {
@@ -293,11 +299,11 @@ export class GameManager {
         }
       }
 
-      if (!this.isMultiplayer) {
+      if (!this.isMultiplayer && this.currentLevel !== 'freestyle') {
         this.lives = 0;
         this.ui.updateHUDLives(0);
         this.triggerGameOver();
-      } else {
+      } else if (this.isMultiplayer) {
         // Multiplayer: bomb penalty reduces score by 2 (min 0)
         this.score = Math.max(0, this.score - 2);
         this.ui.updateHUDScore(this.score);

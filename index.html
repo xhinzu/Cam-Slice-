@@ -70,8 +70,11 @@
         <span id="mp-timer-value" class="timer-value">1:00</span>
       </div>
 
-      <!-- Top Right: Lives and Level Badge -->
+      <!-- Top Right: Lives, Level Badge, and Exit Menu Button -->
       <div class="hud-status-right">
+        <button id="hud-exit-btn" class="hud-exit-btn" title="End Game & Return to Menu">
+          ⏸️ Menu
+        </button>
         <div id="level-badge" class="level-badge">MEDIUM</div>
         <div id="lives-display" class="lives-container">
           <span class="heart active">❤️</span>
@@ -330,6 +333,12 @@
             <div class="level-icon">🌶️</div>
             <div class="level-title">HARD</div>
             <div class="level-desc">Furious spawn speed, fast pane fadeouts, high penalty risk!</div>
+          </button>
+
+          <button class="level-btn freestyle" data-level="freestyle">
+            <div class="level-icon">✨</div>
+            <div class="level-title">FREESTYLE</div>
+            <div class="level-desc">Endless practice mode! No hearts, no penalties — slice as long as you want!</div>
           </button>
         </div>
 
