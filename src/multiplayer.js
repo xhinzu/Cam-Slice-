@@ -106,12 +106,12 @@ export class MultiplayerManager {
 
     // Copy Code & Copy Link Buttons
     this.mpUI.mpCopyCodeBtn.addEventListener('click', () => {
-      const code = this.currentRoomCode || (this.roomState ? this.roomState.roomCode : '');
+      const code = (this.currentRoomCode || this.roomState?.roomCode || document.getElementById('mp-lobby-code')?.textContent || '').trim();
       this.copyTextToClipboard(code, this.mpUI.mpCopyCodeBtn, 'Copied! ✓', '📋 Copy Code');
     });
 
     this.mpUI.mpCopyLinkBtn.addEventListener('click', () => {
-      const code = this.currentRoomCode || (this.roomState ? this.roomState.roomCode : '');
+      const code = (this.currentRoomCode || this.roomState?.roomCode || document.getElementById('mp-lobby-code')?.textContent || '').trim();
       const url = `${window.location.origin}${window.location.pathname}?room=${code}`;
       this.copyTextToClipboard(url, this.mpUI.mpCopyLinkBtn, 'Link Copied! ✓', '🔗 Copy Share Link');
     });
@@ -371,7 +371,7 @@ export class MultiplayerManager {
   }
 
   connectToSocket(roomCode, onOpenCallback) {
-    this.leaveRoom(); // Clean up existing sockets/webRTC
+    this.disconnectSocket(); // Clean up existing sockets/webRTC without wiping currentRoomCode
 
     const partyHost = this.getPartyHost();
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
@@ -556,7 +556,7 @@ export class MultiplayerManager {
     this.mpUI.hideTimerHUD();
   }
 
-  leaveRoom() {
+  disconnectSocket() {
     this.stopMatchTimer();
     if (this.webrtc) {
       this.webrtc.closeAll();
@@ -566,6 +566,10 @@ export class MultiplayerManager {
       this.socket.close();
       this.socket = null;
     }
+  }
+
+  leaveRoom() {
+    this.disconnectSocket();
     this.currentRoomCode = null;
     this.roomState = null;
     this.myId = null;
