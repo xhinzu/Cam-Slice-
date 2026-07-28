@@ -1,9 +1,9 @@
 /**
- * Multiplayer Manager - PartySocket Room Connection, State Synchronization,
- * WebRTC Mesh Orchestration, and Match Loop Integration.
+ * Multiplayer Manager - Zero-Config P2P Room Connection, State Synchronization,
+ * WebRTC Mesh Video, and Match Loop Integration powered by PeerJS & Vercel KV.
  */
 
-import PartySocket from 'partysocket';
+import { Peer } from 'peerjs';
 import { WebRTCManager } from './webrtc.js';
 import { MultiplayerUIManager } from './multiplayerUI.js';
 
@@ -14,26 +14,20 @@ export class MultiplayerManager {
 
     this.mpUI = new MultiplayerUIManager();
     this.webrtc = null;
-    this.socket = null;
+    this.peer = null;
+    this.hostConn = null; // Guest's connection to Host
+    this.guestConns = new Map(); // Host's map of guest connections (peerId -> DataConnection)
+    this.mediaCalls = new Map(); // Map of active MediaConnection streams (peerId -> call)
 
     this.currentRoomCode = null;
     this.myId = null;
+    this.isHost = false;
     this.roomState = null;
     this.timerInterval = null;
 
     this.isPC = WebRTCManager.isSupportedOnDevice();
 
     this.initEvents();
-  }
-
-  getPartyHost() {
-    if (import.meta.env?.VITE_PARTYKIT_HOST) {
-      return import.meta.env.VITE_PARTYKIT_HOST;
-    }
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return '127.0.0.1:1999';
-    }
-    return window.location.host;
   }
 
   generateRoomCode() {
@@ -119,16 +113,10 @@ export class MultiplayerManager {
     // Host Controls: See Others Toggle
     if (this.mpUI.mpSeeOthersToggle) {
       this.mpUI.mpSeeOthersToggle.addEventListener('change', (e) => {
-        if (this.roomState) {
+        if (this.isHost && this.roomState) {
           this.roomState.seeOthers = e.target.checked;
-        }
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(
-            JSON.stringify({
-              type: 'set-see-others',
-              seeOthers: e.target.checked
-            })
-          );
+          this.broadcastStateToGuests();
+          this.onRoomStateChanged();
         }
       });
     }
@@ -136,12 +124,11 @@ export class MultiplayerManager {
     // Host Controls: Start Match
     if (this.mpUI.mpStartMatchBtn) {
       this.mpUI.mpStartMatchBtn.addEventListener('click', () => {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(JSON.stringify({ type: 'start-match' }));
-        } else if (this.roomState) {
-          // Immediate local start fallback
+        if (this.isHost && this.roomState) {
           this.roomState.matchState = 'playing';
           this.roomState.matchEndsAt = Date.now() + 60000;
+          this.roomState.players.forEach((p) => (p.score = 0));
+          this.broadcastStateToGuests();
           this.onRoomStateChanged();
         }
       });
@@ -158,15 +145,14 @@ export class MultiplayerManager {
     // Results Modal Buttons
     if (this.mpUI.mpPlayAgainBtn) {
       this.mpUI.mpPlayAgainBtn.addEventListener('click', () => {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(JSON.stringify({ type: 'restart-lobby' }));
-        } else if (this.roomState) {
+        if (this.isHost && this.roomState) {
           this.roomState.matchState = 'lobby';
           this.roomState.matchEndsAt = null;
           this.roomState.players.forEach((p) => {
             p.score = 0;
             p.ready = p.isHost;
           });
+          this.broadcastStateToGuests();
           this.onRoomStateChanged();
         }
       });
@@ -229,7 +215,6 @@ export class MultiplayerManager {
     const params = new URLSearchParams(window.location.search);
     const roomCode = params.get('room');
     if (roomCode && roomCode.length === 6) {
-      // Auto open multiplayer join
       setTimeout(() => {
         const playerName = this.appUI.getPlayerName();
         if (!playerName) {
@@ -272,36 +257,42 @@ export class MultiplayerManager {
   }
 
   createAndJoinRoom(roomCode, isPublic, difficulty) {
-    this.currentRoomCode = roomCode;
-    this.myId = 'host-' + Math.random().toString(36).substring(2, 7);
+    this.disconnectPeer();
+
+    this.currentRoomCode = roomCode.toUpperCase();
+    this.isHost = true;
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+    const hostPeerId = `fruitslice-room-${this.currentRoomCode}`;
+    this.myId = hostPeerId;
 
     this.roomState = {
-      roomCode,
+      roomCode: this.currentRoomCode,
       isPublic,
       difficulty,
       seeOthers: true,
-      hostId: this.myId,
+      hostId: hostPeerId,
       matchState: 'lobby',
       matchEndsAt: null,
       players: [
-        { id: this.myId, name: playerName, isHost: true, ready: true, score: 0 }
+        { id: hostPeerId, name: playerName, isHost: true, ready: true, score: 0 }
       ]
     };
 
+    this.mpUI.showLobby();
+    this.mpUI.renderLobbyState(this.roomState, this.myId);
+
+    // Register with Vercel KV serverless API if public
     if (isPublic) {
       const publicRoomObj = {
-        code: roomCode,
+        code: this.currentRoomCode,
         hostName: playerName,
         difficulty,
         playerCount: 1,
         timestamp: Date.now()
       };
-
       try {
         localStorage.setItem('fruit_slice_recent_public_room', JSON.stringify(publicRoomObj));
       } catch (e) {}
-
       try {
         fetch('/api/public-rooms', {
           method: 'POST',
@@ -311,168 +302,230 @@ export class MultiplayerManager {
       } catch (e) {}
     }
 
-    this.mpUI.showLobby();
-    this.mpUI.renderLobbyState(this.roomState, this.myId);
+    // Initialize Host PeerJS Server Connection
+    try {
+      this.peer = new Peer(hostPeerId, { debug: 1 });
 
-    // Connect to PartySocket in background
-    this.connectToSocket(roomCode, () => {
-      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(
-          JSON.stringify({
-            type: 'create-room-config',
-            isPublic,
-            difficulty,
-            seeOthers: true
-          })
-        );
-      }
-    });
+      this.peer.on('open', () => {
+        console.log('P2P Host Room initialized with Peer ID:', hostPeerId);
+      });
 
-    // Register with PartyKit global lobby socket if public
-    if (isPublic) {
-      try {
-        const lobbySocket = new PartySocket({ host: this.getPartyHost(), room: 'lobby' });
-        lobbySocket.addEventListener('open', () => {
-          lobbySocket.send(JSON.stringify({
-            type: 'register-public-room',
-            code: roomCode,
-            hostName: playerName,
-            difficulty,
-            playerCount: 1
-          }));
-          setTimeout(() => lobbySocket.close(), 1000);
-        });
-      } catch (e) {}
+      this.peer.on('connection', (conn) => {
+        this.setupHostConnection(conn);
+      });
+
+      this.peer.on('call', (call) => {
+        this.handleIncomingMediaCall(call);
+      });
+
+      this.peer.on('error', (err) => {
+        console.warn('Host PeerJS warning:', err);
+      });
+    } catch (err) {
+      console.error('PeerJS init failed:', err);
     }
   }
 
+  setupHostConnection(conn) {
+    this.guestConns.set(conn.peer, conn);
+
+    conn.on('data', (data) => {
+      let msg;
+      try { msg = typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return; }
+
+      if (msg.type === 'join') {
+        if (this.roomState.players.length >= 4) {
+          conn.send(JSON.stringify({ type: 'error', message: 'Room full (Max 4 players)' }));
+          conn.close();
+          return;
+        }
+
+        const existingPlayer = this.roomState.players.find((p) => p.id === conn.peer);
+        if (!existingPlayer) {
+          this.roomState.players.push({
+            id: conn.peer,
+            name: String(msg.name || 'Ninja Slicer').trim().substring(0, 15),
+            isHost: false,
+            ready: true,
+            score: 0
+          });
+        }
+
+        // Send initial room state to newly joined guest
+        conn.send(JSON.stringify({
+          type: 'init',
+          yourId: conn.peer,
+          state: this.roomState
+        }));
+
+        // Broadcast updated room state to all guests
+        this.broadcastStateToGuests();
+        this.onRoomStateChanged();
+
+        // Update public room player count
+        if (this.roomState.isPublic) {
+          fetch('/api/public-rooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: this.currentRoomCode,
+              hostName: this.roomState.players[0]?.name || 'Host',
+              difficulty: this.roomState.difficulty,
+              playerCount: this.roomState.players.length
+            })
+          }).catch(() => {});
+        }
+      } else if (msg.type === 'score-update') {
+        const player = this.roomState.players.find((p) => p.id === conn.peer);
+        if (player) {
+          player.score = Math.max(0, Number(msg.score) || 0);
+          this.broadcastStateToGuests();
+          this.onRoomStateChanged();
+        }
+      }
+    });
+
+    conn.on('close', () => {
+      this.guestConns.delete(conn.peer);
+      this.roomState.players = this.roomState.players.filter((p) => p.id !== conn.peer);
+      this.broadcastStateToGuests();
+      this.onRoomStateChanged();
+    });
+  }
+
   joinRoom(roomCode) {
-    this.currentRoomCode = roomCode;
-    this.myId = 'guest-' + Math.random().toString(36).substring(2, 7);
+    this.disconnectPeer();
+
+    this.currentRoomCode = roomCode.toUpperCase();
+    this.isHost = false;
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+    const hostPeerId = `fruitslice-room-${this.currentRoomCode}`;
 
     this.roomState = {
-      roomCode,
+      roomCode: this.currentRoomCode,
       isPublic: true,
       difficulty: 'medium',
       seeOthers: true,
-      hostId: '',
+      hostId: hostPeerId,
       matchState: 'lobby',
       matchEndsAt: null,
       players: [
-        { id: this.myId, name: playerName, isHost: false, ready: true, score: 0 }
+        { id: 'connecting', name: playerName, isHost: false, ready: true, score: 0 }
       ]
     };
 
     this.mpUI.showLobby();
     this.mpUI.renderLobbyState(this.roomState, this.myId);
 
-    this.connectToSocket(roomCode);
-  }
-
-  connectToSocket(roomCode, onOpenCallback) {
-    this.disconnectSocket(); // Clean up existing sockets/webRTC without wiping currentRoomCode
-
-    const partyHost = this.getPartyHost();
-    const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
-
-    this.socket = new PartySocket({
-      host: partyHost,
-      room: roomCode
-    });
-
-    // Initialize WebRTC Manager with signaling callback
-    this.webrtc = new WebRTCManager({
-      sendSignal: (targetId, signalData) => {
-        if (this.socket) {
-          this.socket.send(
-            JSON.stringify({
-              type: 'signal',
-              targetId,
-              signalData
-            })
-          );
-        }
-      },
-      onRemoteStream: (peerId, stream) => {
-        this.mpUI.attachRemoteVideoStream(peerId, stream);
-      },
-      onRemoteStreamEnded: (peerId) => {
-        this.mpUI.showRemoteCameraUnavailable(peerId);
-      }
-    });
-
-    if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
-      this.webrtc.setLocalStream(this.game.camera.video.srcObject);
-    }
-
-    this.socket.addEventListener('open', () => {
-      this.socket.send(
-        JSON.stringify({
-          type: 'set-name',
-          name: playerName
-        })
-      );
-
-      if (onOpenCallback) onOpenCallback();
-    });
-
-    this.socket.addEventListener('message', (event) => {
-      this.handleSocketMessage(event.data);
-    });
-
-    this.socket.addEventListener('close', () => {
-      console.log('Multiplayer PartySocket closed');
-    });
-  }
-
-  handleSocketMessage(rawMsg) {
-    let msg;
+    // Initialize Guest PeerJS Client Connection
     try {
-      msg = JSON.parse(rawMsg);
-    } catch (e) {
-      return;
+      this.peer = new Peer({ debug: 1 });
+
+      this.peer.on('open', (guestPeerId) => {
+        this.myId = guestPeerId;
+
+        // Connect to Host Peer
+        this.hostConn = this.peer.connect(hostPeerId, { reliable: true });
+
+        this.hostConn.on('open', () => {
+          this.hostConn.send(JSON.stringify({
+            type: 'join',
+            name: playerName,
+            peerId: guestPeerId
+          }));
+        });
+
+        this.hostConn.on('data', (data) => {
+          let msg;
+          try { msg = typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return; }
+
+          if (msg.type === 'init' || msg.type === 'state-update') {
+            if (msg.yourId) this.myId = msg.yourId;
+            this.roomState = msg.state;
+            this.onRoomStateChanged();
+          } else if (msg.type === 'error') {
+            alert(msg.message || 'Error joining room');
+            this.leaveRoom();
+            this.mpUI.showSubmenu();
+          }
+        });
+
+        this.hostConn.on('close', () => {
+          alert('Host has disconnected or room ended.');
+          this.leaveRoom();
+          this.game.stopGame();
+          this.mpUI.hideAllMPModals();
+          this.appUI.showMainMenu(this.game.currentLevel);
+        });
+      });
+
+      this.peer.on('call', (call) => {
+        this.handleIncomingMediaCall(call);
+      });
+
+      this.peer.on('error', (err) => {
+        console.warn('Guest PeerJS warning:', err);
+      });
+    } catch (err) {
+      console.error('Guest PeerJS init error:', err);
+    }
+  }
+
+  broadcastStateToGuests() {
+    if (!this.isHost || !this.roomState) return;
+    const payload = JSON.stringify({
+      type: 'state-update',
+      state: this.roomState
+    });
+
+    for (const [peerId, conn] of this.guestConns) {
+      if (conn && conn.open) {
+        conn.send(payload);
+      }
+    }
+  }
+
+  sendScoreToHost(score) {
+    if (this.isHost) {
+      const hostPlayer = this.roomState?.players.find((p) => p.id === this.myId);
+      if (hostPlayer) {
+        hostPlayer.score = score;
+        this.broadcastStateToGuests();
+        this.onRoomStateChanged();
+      }
+    } else if (this.hostConn && this.hostConn.open) {
+      this.hostConn.send(JSON.stringify({
+        type: 'score-update',
+        score
+      }));
+    }
+  }
+
+  handleIncomingMediaCall(call) {
+    let localStream = null;
+    if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
+      localStream = this.game.camera.video.srcObject;
     }
 
-    switch (msg.type) {
-      case 'init': {
-        this.myId = msg.yourId;
-        this.roomState = msg.state;
-        this.mpUI.showLobby();
-        this.mpUI.renderLobbyState(this.roomState, this.myId);
-        break;
-      }
+    call.answer(localStream);
+    call.on('stream', (remoteStream) => {
+      this.mpUI.attachRemoteVideoStream(call.peer, remoteStream);
+    });
+  }
 
-      case 'error': {
-        alert(msg.message || 'Room Error');
-        this.leaveRoom();
-        this.mpUI.showSubmenu();
-        break;
-      }
+  callPeerVideo(peerId) {
+    if (!this.peer || this.mediaCalls.has(peerId)) return;
+    let localStream = null;
+    if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
+      localStream = this.game.camera.video.srcObject;
+    }
 
-      case 'state-update': {
-        this.roomState = msg.state;
-        this.onRoomStateChanged();
-        break;
-      }
-
-      case 'host-disconnected': {
-        alert(msg.message || 'Host disconnected');
-        this.leaveRoom();
-        this.game.stopGame();
-        this.mpUI.hideAllMPModals();
-        this.mpUI.hideSidebarPOV();
-        this.mpUI.hideTimerHUD();
-        this.appUI.showMainMenu(this.game.currentLevel);
-        break;
-      }
-
-      case 'signal': {
-        if (this.webrtc && this.isPC && this.roomState?.seeOthers) {
-          this.webrtc.handleSignal(msg.senderId, msg.signalData);
-        }
-        break;
-      }
+    const call = this.peer.call(peerId, localStream);
+    if (call) {
+      this.mediaCalls.set(peerId, call);
+      call.on('stream', (remoteStream) => {
+        this.mpUI.attachRemoteVideoStream(peerId, remoteStream);
+      });
     }
   }
 
@@ -485,33 +538,25 @@ export class MultiplayerManager {
       this.game.stopGame();
       this.mpUI.hideSidebarPOV();
       this.mpUI.hideTimerHUD();
-      if (this.webrtc) this.webrtc.closeAll();
 
       this.mpUI.showLobby();
       this.mpUI.renderLobbyState(this.roomState, this.myId);
     } else if (matchState === 'playing') {
       this.mpUI.hideAllMPModals();
 
-      // Start local gameplay loop in multiplayer mode
-      if (!this.game.isPlaying) {
-        this.game.startMultiplayerGame(difficulty, (newScore) => {
-          if (this.socket) {
-            this.socket.send(
-              JSON.stringify({
-                type: 'score-update',
-                score: newScore
-              })
-            );
+      // Ensure local match loop runs in multiplayer mode
+      this.game.stopGame();
+      this.game.startMultiplayerGame(difficulty, (newScore) => {
+        this.sendScoreToHost(newScore);
+      });
+
+      // Initiate WebRTC Media Calls if PC & seeOthers ON
+      if (this.isPC && seeOthers) {
+        players.forEach((p) => {
+          if (p.id !== this.myId && p.id !== 'connecting') {
+            this.callPeerVideo(p.id);
           }
         });
-      }
-
-      // Sync WebRTC Mesh if PC & seeOthers ON
-      if (this.isPC && seeOthers) {
-        const peerIds = players.map((p) => p.id);
-        this.webrtc.syncMeshPeers(this.myId, peerIds);
-      } else if (this.webrtc) {
-        this.webrtc.closeAll();
       }
 
       // Render PC Sidebar POV overlay
@@ -523,7 +568,7 @@ export class MultiplayerManager {
       this.game.stopGame();
       this.stopMatchTimer();
 
-      const isHost = this.roomState.hostId === this.myId;
+      const isHost = this.roomState.hostId === this.myId || this.isHost;
       this.mpUI.renderResults(players, isHost);
       this.mpUI.showResults();
     }
@@ -556,22 +601,34 @@ export class MultiplayerManager {
     this.mpUI.hideTimerHUD();
   }
 
-  disconnectSocket() {
+  disconnectPeer() {
     this.stopMatchTimer();
-    if (this.webrtc) {
-      this.webrtc.closeAll();
-      this.webrtc = null;
+    for (const [peerId, call] of this.mediaCalls) {
+      try { call.close(); } catch (e) {}
     }
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
+    this.mediaCalls.clear();
+
+    for (const [peerId, conn] of this.guestConns) {
+      try { conn.close(); } catch (e) {}
+    }
+    this.guestConns.clear();
+
+    if (this.hostConn) {
+      try { this.hostConn.close(); } catch (e) {}
+      this.hostConn = null;
+    }
+
+    if (this.peer) {
+      try { this.peer.destroy(); } catch (e) {}
+      this.peer = null;
     }
   }
 
   leaveRoom() {
-    this.disconnectSocket();
+    this.disconnectPeer();
     this.currentRoomCode = null;
     this.roomState = null;
     this.myId = null;
+    this.isHost = false;
   }
 }
