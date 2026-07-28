@@ -26,6 +26,18 @@ export class MultiplayerUIManager {
     this.mpConfirmCreateBtn = document.getElementById('mp-confirm-create-btn');
     this.mpCreateBackBtn = document.getElementById('mp-create-back-btn');
     this.selectedDiff = 'medium';
+    this.selectedMode = 'fruit-slice';
+
+    this.canvaModeCards = document.querySelectorAll('.canva-mode-card');
+    if (this.canvaModeCards) {
+      this.canvaModeCards.forEach((card) => {
+        card.addEventListener('click', () => {
+          this.canvaModeCards.forEach((c) => c.classList.remove('active'));
+          card.classList.add('active');
+          this.selectedMode = card.dataset.mpMode || 'fruit-slice';
+        });
+      });
+    }
 
     // Join Room Elements
     this.mpPublicRoomsList = document.getElementById('mp-public-rooms-list');
@@ -108,7 +120,8 @@ export class MultiplayerUIManager {
       this.mpLobbyBadgeEl.className = `room-badge ${state.isPublic ? 'public' : 'private'}`;
     }
     if (this.mpLobbyDiffEl) {
-      this.mpLobbyDiffEl.textContent = state.difficulty.toUpperCase();
+      const modeTag = state.mode === 'punch-glass' ? '🥊 PUNCH GLASS' : '🍉 FRUIT SLICE';
+      this.mpLobbyDiffEl.textContent = `${modeTag} • ${state.difficulty.toUpperCase()}`;
     }
 
     const meInState = state.players ? state.players.find((p) => p.id === currentUserId) : null;

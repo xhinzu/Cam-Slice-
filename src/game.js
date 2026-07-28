@@ -99,9 +99,13 @@ export class GameManager {
     this.gameLoop(performance.now());
   }
 
-  startMultiplayerGame(level = 'medium', onSliceCallback = null) {
+  startMultiplayerGame(level = 'medium', mode = 'fruit-slice', onSliceCallback = null) {
+    if (typeof mode === 'function') {
+      onSliceCallback = mode;
+      mode = 'fruit-slice';
+    }
     this.currentLevel = level;
-    this.gameMode = 'fruit-slice';
+    this.gameMode = mode || 'fruit-slice';
     this.isMultiplayer = true;
     this.onMultiplayerSlice = onSliceCallback;
     this.score = 0;
@@ -112,9 +116,13 @@ export class GameManager {
     this.lastSpawnTime = performance.now();
     this.isPlaying = true;
 
+    if (this.gameMode === 'punch-glass') {
+      this.punchGlassManager.reset();
+    }
+
     this.ui.updateHUDScore(0);
     this.ui.updateHUDLives(999);
-    this.ui.updateLevelBadge(`MP-${level.toUpperCase()}`);
+    this.ui.updateLevelBadge(`MP-${this.gameMode === 'punch-glass' ? 'GLASS' : 'FRUIT'}-${level.toUpperCase()}`);
     this.ui.setHUDVisible(true);
 
     if (this.animFrameId) {

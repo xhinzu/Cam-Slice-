@@ -373,21 +373,49 @@
     <div id="mp-modal" class="modal-overlay hidden">
       <div class="modal-card mp-card glass-panel glow-border">
         
-        <!-- View 1: Submenu -->
+        <!-- View 1: Submenu (Canva Reference Design: SLICE TOGETHER) -->
         <div id="mp-submenu-view" class="mp-view">
-          <div class="logo-badge">⚔️ MULTIPLAYER ARENA</div>
-          <h2>Slice Together!</h2>
-          <p>Compete in real-time fruit slicing matches with up to 4 players!</p>
-          <div class="menu-button-group">
-            <button id="mp-submenu-create-btn" class="btn btn-primary btn-large btn-glow">
-              ➕ Create Room
-            </button>
-            <button id="mp-submenu-join-btn" class="btn btn-secondary btn-large">
-              🔍 Join Room / Public Games
-            </button>
-            <button id="mp-back-to-main-btn" class="btn btn-secondary btn-large">
-              ⬅ Main Menu
-            </button>
+          <div class="canva-submenu-card">
+            <h2 class="canva-title">SLICE TOGETHER</h2>
+
+            <!-- Select Game Mode Section -->
+            <div class="canva-section">
+              <div class="canva-section-label">SELECT GAME MODE</div>
+              <div class="canva-mode-selection-grid">
+                <!-- Mode 1: Fruit Slice -->
+                <button class="canva-mode-card active" data-mp-mode="fruit-slice">
+                  <div class="canva-mode-icon-box mode-fruit-box">
+                    <span class="canva-mode-emoji">🍉</span>
+                  </div>
+                  <span class="canva-mode-title">FRUIT SLICE</span>
+                </button>
+
+                <!-- Mode 2: Punch Glass -->
+                <button class="canva-mode-card" data-mp-mode="punch-glass">
+                  <div class="canva-mode-icon-box mode-glass-box">
+                    <svg class="crack-lines-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M 50,50 L 10,10 M 50,50 L 85,15 M 50,50 L 90,60 M 50,50 L 65,90 M 50,50 L 20,85 M 50,50 L 5,45 M 50,50 L 35,5 M 50,50 L 75,40" stroke="rgba(0,0,0,0.85)" stroke-width="3" fill="none"/>
+                      <circle cx="50" cy="50" r="7" fill="none" stroke="rgba(0,0,0,0.9)" stroke-width="2.5"/>
+                    </svg>
+                    <span class="canva-mode-emoji glass-emoji">🥊</span>
+                  </div>
+                  <span class="canva-mode-title">PUNCH GLASS</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Action Buttons Section -->
+            <div class="canva-actions-group">
+              <button id="mp-submenu-create-btn" class="canva-action-btn canva-btn-teal">
+                CREATE ROOM
+              </button>
+              <button id="mp-submenu-join-btn" class="canva-action-btn canva-btn-teal">
+                JOIN ROOM
+              </button>
+              <button id="mp-back-to-main-btn" class="canva-action-btn canva-btn-back">
+                BACK
+              </button>
+            </div>
           </div>
         </div>
 

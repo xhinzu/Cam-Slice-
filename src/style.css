@@ -2092,3 +2092,108 @@ input:checked + .slider:before {
   padding: 14px 24px;
 }
 
+/* ==========================================================================
+   Canva Reference Submenu Modal ("SLICE TOGETHER")
+   ========================================================================== */
+.canva-submenu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 520px;
+  background: radial-gradient(circle at center, #15103a 0%, #0a081c 90%);
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 36px 32px 32px 32px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  margin: 0 auto;
+}
+
+/* Mode Selection Cards Grid */
+.canva-mode-selection-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.canva-mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s;
+}
+
+.canva-mode-card:hover {
+  transform: scale(1.08) translateY(-3px);
+}
+
+.canva-mode-card.active {
+  transform: scale(1.1);
+}
+
+/* Icon Boxes */
+.canva-mode-icon-box {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 3px 6px rgba(255, 255, 255, 0.5), inset 0 -4px 8px rgba(0, 0, 0, 0.4), 0 10px 20px rgba(0, 0, 0, 0.6);
+  transition: box-shadow 0.2s, border 0.2s;
+  overflow: hidden;
+}
+
+.canva-mode-card.active .canva-mode-icon-box {
+  box-shadow: 0 0 0 4px #ffffff, 0 0 25px rgba(0, 242, 254, 0.8), 0 10px 20px rgba(0, 0, 0, 0.8);
+}
+
+.mode-fruit-box {
+  background: linear-gradient(135deg, #a3e635 0%, #84cc16 100%);
+}
+
+.mode-glass-box {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.canva-mode-emoji {
+  font-size: 3.5rem;
+  z-index: 2;
+}
+
+.crack-lines-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.canva-mode-title {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #ffffff;
+  margin-top: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Dark Teal Action Pill Button */
+.canva-btn-teal {
+  background: #0097a7;
+  color: #ffffff;
+  font-size: 1.3rem;
+  padding: 16px 24px;
+}
+

@@ -383,16 +383,27 @@ export class PunchTheGlassManager {
       // Safe Green Hit -> Score!
       this.game.score++;
       this.game.ui.updateHUDScore(this.game.score);
+      if (this.game.isMultiplayer && typeof this.game.onMultiplayerSlice === 'function') {
+        this.game.onMultiplayerSlice(this.game.score);
+      }
     } else {
       // Danger Red Hit -> Penalty & Life Loss!
       sounds.playBomb();
       this.game.ui.triggerScreenFlash();
       this.game.shakeDuration = 15;
-      this.game.lives--;
-      this.game.ui.updateHUDLives(this.game.lives);
+      if (!this.game.isMultiplayer) {
+        this.game.lives--;
+        this.game.ui.updateHUDLives(this.game.lives);
 
-      if (this.game.lives <= 0) {
-        this.game.triggerGameOver();
+        if (this.game.lives <= 0) {
+          this.game.triggerGameOver();
+        }
+      } else {
+        this.game.score = Math.max(0, this.game.score - 2);
+        this.game.ui.updateHUDScore(this.game.score);
+        if (typeof this.game.onMultiplayerSlice === 'function') {
+          this.game.onMultiplayerSlice(this.game.score);
+        }
       }
     }
   }

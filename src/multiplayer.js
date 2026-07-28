@@ -75,9 +75,10 @@ export class MultiplayerManager {
     // Confirm Create Room
     this.mpUI.mpConfirmCreateBtn.addEventListener('click', () => {
       const isPublic = this.mpUI.mpRoomVisibilityToggle.checked;
-      const difficulty = this.mpUI.selectedDiff;
+      const difficulty = this.mpUI.selectedDiff || 'medium';
+      const mode = this.mpUI.selectedMode || 'fruit-slice';
       const roomCode = this.generateRoomCode();
-      this.createAndJoinRoom(roomCode, isPublic, difficulty);
+      this.createAndJoinRoom(roomCode, isPublic, difficulty, mode);
     });
 
     // Join Room by Code Input
@@ -257,7 +258,7 @@ export class MultiplayerManager {
     this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
   }
 
-  async createAndJoinRoom(roomCode, isPublic, difficulty) {
+  async createAndJoinRoom(roomCode, isPublic, difficulty, mode = 'fruit-slice') {
     this.disconnectPeer();
 
     this.currentRoomCode = roomCode.toUpperCase();
@@ -277,6 +278,7 @@ export class MultiplayerManager {
       roomCode: this.currentRoomCode,
       isPublic,
       difficulty,
+      mode: mode || 'fruit-slice',
       seeOthers: true,
       hostId: this.myId,
       matchState: 'lobby',
@@ -655,7 +657,8 @@ export class MultiplayerManager {
       if (this.activeMatchState !== 'playing') {
         this.activeMatchState = 'playing';
         this.game.stopGame();
-        this.game.startMultiplayerGame(difficulty, (newScore) => {
+        const mode = this.roomState.mode || 'fruit-slice';
+        this.game.startMultiplayerGame(difficulty, mode, (newScore) => {
           this.sendScoreToHost(newScore);
         });
         if (matchEndsAt) {
