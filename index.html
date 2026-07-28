@@ -618,29 +618,39 @@
           </div>
         </div>
 
-        <!-- View 3: Join Room -->
+        <!-- View 3: Join Room (Canva Reference Design) -->
         <div id="mp-join-view" class="mp-view hidden">
-          <h2>Join Multiplayer Match</h2>
-          <div class="join-sections">
-            <div class="join-code-box glass-panel">
-              <h3>Have a Code or Share Link?</h3>
-              <div class="input-group">
-                <input type="text" id="mp-code-input" placeholder="Enter 6-character room code or link..." maxlength="60">
-                <button id="mp-join-by-code-btn" class="btn btn-primary">Join Room ➔</button>
+          <div class="canva-join-card">
+            <h2 class="underlined-title">JOIN MULTIPLAYER</h2>
+
+            <div class="canva-join-section">
+              <div class="canva-subhead-green">HAVE CODE?</div>
+              
+              <div class="canva-code-input-wrapper">
+                <input type="text" id="mp-code-input" class="canva-code-input" placeholder="ENTER 6 DIGIT CODE" maxlength="60" autocomplete="off" spellcheck="false">
+              </div>
+
+              <div class="canva-join-actions">
+                <button id="mp-join-by-code-btn" class="canva-action-btn canva-btn-lime">
+                  JOIN ROOM :D
+                </button>
+                <button id="mp-join-back-btn" class="canva-action-btn canva-btn-red">
+                  BACK
+                </button>
               </div>
             </div>
-            <div class="public-rooms-container">
+
+            <!-- Public Rooms List (Collapsible below) -->
+            <div class="public-rooms-container canva-public-box">
               <div class="public-rooms-header">
-                <h3>Public Games</h3>
+                <span class="label-green" style="font-weight: 800; font-size: 0.9rem;">PUBLIC GAMES</span>
                 <button id="mp-refresh-public-btn" class="icon-btn-inline" title="Refresh">🔄</button>
               </div>
               <div id="mp-public-rooms-list" class="public-rooms-list">
                 <div class="lb-loading">Searching public rooms...</div>
               </div>
             </div>
-          </div>
-          <div class="modal-actions">
-            <button id="mp-join-back-btn" class="btn btn-secondary">⬅ Back</button>
+
           </div>
         </div>
 
