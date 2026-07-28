@@ -1881,3 +1881,214 @@ input:checked + .slider:before {
   gap: 8px;
 }
 
+/* ==========================================================================
+   Canva Reference Create Multiplayer Room Modal
+   ========================================================================== */
+.canva-create-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 520px;
+  background: radial-gradient(circle at center, #15103a 0%, #0a081c 90%);
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 36px 32px 32px 32px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  margin: 0 auto;
+}
+
+.canva-title {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 2.1rem;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 28px;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.canva-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 28px;
+}
+
+.canva-section-label {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
+/* Visibility Toggle Group */
+.canva-visibility-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.canva-toggle-label {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+/* Custom Canva Switch Slider */
+.canva-switch {
+  position: relative;
+  display: inline-block;
+  width: 68px;
+  height: 34px;
+}
+
+.canva-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.canva-switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #00d2d3;
+  transition: 0.3s;
+  border-radius: 34px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.canva-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+}
+
+.canva-switch input:checked + .slider {
+  background-color: #00e5ff;
+}
+
+.canva-switch input:checked + .slider:before {
+  transform: translateX(34px);
+}
+
+/* Difficulty Buttons Row */
+.canva-diff-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.canva-diff-btn {
+  flex: 1;
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  padding: 14px 10px;
+  border-radius: 28px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s, box-shadow 0.2s;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 6px rgba(0,0,0,0.3), 0 6px 15px rgba(0,0,0,0.4);
+}
+
+.canva-diff-btn:hover {
+  transform: scale(1.06) translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.canva-diff-btn.active {
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6), 0 0 20px #ffffff, 0 8px 20px rgba(0,0,0,0.6);
+  transform: scale(1.08);
+}
+
+/* Canva Easy Green */
+.canva-easy {
+  background: #a3e635;
+  color: #1f3a03;
+}
+
+/* Canva Medium Yellow */
+.canva-medium {
+  background: #facc15;
+  color: #423502;
+}
+
+/* Canva Hard Red */
+.canva-hard {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Action Buttons Stack */
+.canva-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.canva-action-btn {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  width: 100%;
+  border-radius: 28px;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s, box-shadow 0.2s;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 6px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.5);
+}
+
+.canva-action-btn:hover {
+  transform: scale(1.03) translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.canva-action-btn:active {
+  transform: scale(0.98) translateY(1px);
+}
+
+/* Confirm Cyan Pill Button */
+.canva-btn-confirm {
+  background: #00f2fe;
+  color: #042d3a;
+  font-size: 1.35rem;
+  padding: 16px 24px;
+}
+
+/* Back Reddish Pill Button */
+.canva-btn-back {
+  background: #ff5252;
+  color: #1a0202;
+  font-size: 1.25rem;
+  padding: 14px 24px;
+}
+

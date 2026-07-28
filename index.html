@@ -391,33 +391,43 @@
           </div>
         </div>
 
-        <!-- View 2: Create Room -->
+        <!-- View 2: Create Room (Canva Reference Design) -->
         <div id="mp-create-view" class="mp-view hidden">
-          <h2>Create Multiplayer Room</h2>
-          <div class="create-form-grid">
-            <div class="form-row">
-              <label>Room Visibility</label>
-              <div class="toggle-switch-group">
-                <span>Private</span>
-                <label class="switch">
+          <div class="canva-create-card">
+            <h2 class="canva-title">CREATE MULTIPLAYER ROOM</h2>
+
+            <!-- Room Visibility Section -->
+            <div class="canva-section">
+              <div class="canva-section-label">ROOM VISIBILITY</div>
+              <div class="canva-visibility-group">
+                <span class="canva-toggle-label">PRIVATE</span>
+                <label class="switch canva-switch">
                   <input type="checkbox" id="mp-visibility-toggle" checked>
                   <span class="slider round"></span>
                 </label>
-                <span>Public</span>
+                <span class="canva-toggle-label">PUBLIC</span>
               </div>
             </div>
-            <div class="form-row">
-              <label>Match Difficulty</label>
-              <div class="diff-btn-group">
-                <button class="mp-diff-btn btn-sm" data-diff="easy">🍏 EASY</button>
-                <button class="mp-diff-btn btn-sm active" data-diff="medium">🍊 MEDIUM</button>
-                <button class="mp-diff-btn btn-sm" data-diff="hard">🌶️ HARD</button>
+
+            <!-- Difficulty Section -->
+            <div class="canva-section">
+              <div class="canva-section-label">DIFFICULTY</div>
+              <div class="canva-diff-group">
+                <button class="mp-diff-btn canva-diff-btn canva-easy" data-diff="easy">EASY</button>
+                <button class="mp-diff-btn canva-diff-btn canva-medium active" data-diff="medium">MEDIUM</button>
+                <button class="mp-diff-btn canva-diff-btn canva-hard" data-diff="hard">HARD</button>
               </div>
             </div>
-          </div>
-          <div class="modal-actions">
-            <button id="mp-confirm-create-btn" class="btn btn-primary btn-large btn-glow">🚀 Create & Enter Lobby</button>
-            <button id="mp-create-back-btn" class="btn btn-secondary">⬅ Back</button>
+
+            <!-- Action Buttons Section -->
+            <div class="canva-actions-group">
+              <button id="mp-confirm-create-btn" class="canva-action-btn canva-btn-confirm">
+                CREATE AND ENTER LOBBY 🤘
+              </button>
+              <button id="mp-create-back-btn" class="canva-action-btn canva-btn-back">
+                BACK
+              </button>
+            </div>
           </div>
         </div>
 
