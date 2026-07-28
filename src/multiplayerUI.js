@@ -98,7 +98,7 @@ export class MultiplayerUIManager {
     if (this.mpResultsModal) this.mpResultsModal.classList.add('hidden');
   }
 
-  renderLobbyState(state, currentUserId) {
+  renderLobbyState(state, currentUserId, isHostFlag = false) {
     if (!state) return;
 
     // Room Code & Badges
@@ -111,7 +111,8 @@ export class MultiplayerUIManager {
       this.mpLobbyDiffEl.textContent = state.difficulty.toUpperCase();
     }
 
-    const isHost = state.hostId === currentUserId;
+    const meInState = state.players ? state.players.find((p) => p.id === currentUserId) : null;
+    const isHost = Boolean(isHostFlag || state.hostId === currentUserId || meInState?.isHost);
 
     // Host vs Non-Host Controls
     if (isHost) {

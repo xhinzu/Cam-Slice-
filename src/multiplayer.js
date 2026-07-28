@@ -285,7 +285,7 @@ export class MultiplayerManager {
     };
 
     this.mpUI.showLobby();
-    this.mpUI.renderLobbyState(this.roomState, this.myId);
+    this.mpUI.renderLobbyState(this.roomState, this.myId, this.isHost);
 
     // 1. Post to Vercel KV Room State API for global cross-network discovery & sync
     await this.pushRoomStateToServer({
@@ -345,7 +345,7 @@ export class MultiplayerManager {
     };
 
     this.mpUI.showLobby();
-    this.mpUI.renderLobbyState(this.roomState, this.myId);
+    this.mpUI.renderLobbyState(this.roomState, this.myId, this.isHost);
 
     // 1. Join room state on Vercel KV
     const serverState = await this.pushRoomStateToServer({
@@ -471,13 +471,19 @@ export class MultiplayerManager {
         const oldId = this.myId;
         this.myId = assignedPeerId;
 
-        if (this.roomState && this.roomState.players) {
-          const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
-          const me = this.roomState.players.find(p => p.id === oldId || (this.isHost ? p.isHost : !p.isHost && p.name === playerName));
-          if (me) {
-            me.id = assignedPeerId;
-            this.pushRoomStateToServer({ action: 'update', player: me });
+        if (this.roomState) {
+          if (this.isHost) {
+            this.roomState.hostId = assignedPeerId;
           }
+          if (this.roomState.players) {
+            const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+            const me = this.roomState.players.find(p => p.id === oldId || (this.isHost ? p.isHost : !p.isHost && p.name === playerName));
+            if (me) {
+              me.id = assignedPeerId;
+              if (this.isHost) me.isHost = true;
+            }
+          }
+          this.pushRoomStateToServer({ action: 'update', state: this.roomState });
         }
 
         // Auto call existing peers if seeOthers is active
@@ -537,7 +543,7 @@ export class MultiplayerManager {
         this.stopMatchTimer();
       }
       this.mpUI.showLobby();
-      this.mpUI.renderLobbyState(this.roomState, this.myId);
+      this.mpUI.renderLobbyState(this.roomState, this.myId, this.isHost);
 
     } else if (matchState === 'playing') {
       this.appUI.hideAllModals();
