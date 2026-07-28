@@ -93,14 +93,16 @@ html, body {
   opacity: 1;
 }
 
-/* Glassmorphism Panel Common Styles */
+/* Glassmorphism Panel Common Styles (Optimized for 60 FPS GPU Acceleration) */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: var(--radius-lg);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .glow-border {
@@ -1639,6 +1641,8 @@ input:checked + .slider:before {
   padding: 36px 44px 28px 44px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.2);
   overflow: hidden;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Console LED Lights */
@@ -1703,11 +1707,13 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s, filter 0.2s;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s, filter 0.15s;
   box-shadow: 
     inset 0 3px 6px rgba(255, 255, 255, 0.7),
     inset 0 -4px 8px rgba(0, 0, 0, 0.6),
     0 10px 25px rgba(0, 0, 0, 0.8);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .capsule-btn:hover {

@@ -59,6 +59,12 @@ export class HandTrackerManager {
       return { activeBladeSegments: [], handsTracked: 0 };
     }
 
+    // High performance frame caching: skip duplicate GPU inferences if video frame timestamp is identical
+    if (videoElement.currentTime === this.lastVideoTime && this.lastDetectionResult) {
+      return this.lastDetectionResult;
+    }
+    this.lastVideoTime = videoElement.currentTime;
+
     const results = this.handLandmarker.detectForVideo(videoElement, performance.now());
     const activeBladeSegments = [];
     const activeHandIds = new Set();
