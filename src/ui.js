@@ -30,6 +30,7 @@ export class UIManager {
 
     // Main Menu Buttons & Tags
     this.menuPlayBtn = document.getElementById('menu-play-btn');
+    this.menuMPBtn = document.getElementById('menu-mp-btn');
     this.menuModesBtn = document.getElementById('menu-modes-btn');
     this.menuTutorialBtn = document.getElementById('menu-tutorial-btn');
     this.menuQuitBtn = document.getElementById('menu-quit-btn');

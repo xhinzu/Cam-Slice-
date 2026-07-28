@@ -8,6 +8,7 @@ import { HandTrackerManager } from './handTracker.js';
 import { UIManager } from './ui.js';
 import { leaderboard } from './leaderboard.js';
 import { GameManager } from './game.js';
+import { MultiplayerManager } from './multiplayer.js';
 
 class AppController {
   constructor() {
@@ -18,6 +19,7 @@ class AppController {
     this.camera = new CameraManager(this.videoEl);
     this.handTracker = new HandTrackerManager();
     this.game = new GameManager(this.canvasEl, this.camera, this.handTracker, this.ui, leaderboard);
+    this.multiplayer = new MultiplayerManager(this.game, this.ui);
 
     this.selectedLevel = 'medium';
     this.selectedMode = 'fruit-slice';
@@ -95,6 +97,13 @@ class AppController {
         this.ui.hideAllModals();
         this.ui.setModeActive(this.selectedMode);
         this.game.startNewGame(this.selectedLevel, this.selectedMode);
+      });
+    }
+
+    if (this.ui.menuMPBtn) {
+      this.ui.menuMPBtn.addEventListener('click', () => {
+        this.ui.hideAllModals();
+        this.multiplayer.mpUI.showSubmenu();
       });
     }
 

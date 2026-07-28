@@ -42,6 +42,8 @@ export class GameManager {
     this.lives = 3;
     this.currentLevel = 'medium';
     this.gameMode = 'fruit-slice'; // 'fruit-slice' or 'punch-glass'
+    this.isMultiplayer = false;
+    this.onMultiplayerSlice = null;
 
     // Entities & Mode Managers
     this.fruits = [];
@@ -72,6 +74,8 @@ export class GameManager {
   startNewGame(level = 'medium', mode = 'fruit-slice') {
     this.currentLevel = level;
     this.gameMode = mode;
+    this.isMultiplayer = false;
+    this.onMultiplayerSlice = null;
     this.score = 0;
     this.lives = 3;
     this.fruits = [];
@@ -87,6 +91,30 @@ export class GameManager {
     this.ui.updateHUDScore(0);
     this.ui.updateHUDLives(3);
     this.ui.updateLevelBadge(level);
+    this.ui.setHUDVisible(true);
+
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+    }
+    this.gameLoop(performance.now());
+  }
+
+  startMultiplayerGame(level = 'medium', onSliceCallback = null) {
+    this.currentLevel = level;
+    this.gameMode = 'fruit-slice';
+    this.isMultiplayer = true;
+    this.onMultiplayerSlice = onSliceCallback;
+    this.score = 0;
+    this.lives = 999;
+    this.fruits = [];
+    this.slicedHalves = [];
+    this.particles = [];
+    this.lastSpawnTime = performance.now();
+    this.isPlaying = true;
+
+    this.ui.updateHUDScore(0);
+    this.ui.updateHUDLives(999);
+    this.ui.updateLevelBadge(`MP-${level.toUpperCase()}`);
     this.ui.setHUDVisible(true);
 
     if (this.animFrameId) {
@@ -181,7 +209,7 @@ export class GameManager {
 
       // Check offscreen fall (missed fruit)
       if (fruit.markedForDeletion) {
-        if (!fruit.sliced && fruit.type === 'fruit') {
+        if (!fruit.sliced && fruit.type === 'fruit' && !this.isMultiplayer) {
           this.lives--;
           this.ui.updateHUDLives(this.lives);
           if (this.lives <= 0) {
@@ -244,7 +272,7 @@ export class GameManager {
     entity.markedForDeletion = true;
 
     if (entity.type === 'bomb') {
-      // Sliced a bomb! Instant Explosion & Game Over
+      // Sliced a bomb!
       sounds.playBomb();
       this.ui.triggerScreenFlash();
       this.shakeDuration = 20;
@@ -257,9 +285,18 @@ export class GameManager {
         }
       }
 
-      this.lives = 0;
-      this.ui.updateHUDLives(0);
-      this.triggerGameOver();
+      if (!this.isMultiplayer) {
+        this.lives = 0;
+        this.ui.updateHUDLives(0);
+        this.triggerGameOver();
+      } else {
+        // Multiplayer: bomb penalty reduces score by 2 (min 0)
+        this.score = Math.max(0, this.score - 2);
+        this.ui.updateHUDScore(this.score);
+        if (this.onMultiplayerSlice) {
+          this.onMultiplayerSlice(this.score);
+        }
+      }
       return;
     }
 
@@ -269,6 +306,9 @@ export class GameManager {
 
     this.score++;
     this.ui.updateHUDScore(this.score);
+    if (this.isMultiplayer && this.onMultiplayerSlice) {
+      this.onMultiplayerSlice(this.score);
+    }
 
     // Multi-slice combo tracking
     const now = performance.now();

@@ -23,6 +23,11 @@
       <div id="screen-flash" class="screen-flash"></div>
     </div>
 
+    <!-- PC POV Sidebar Overlay -->
+    <div id="mp-sidebar-pov" class="mp-sidebar-pov hidden">
+      <div id="mp-sidebar-content" class="mp-sidebar-content"></div>
+    </div>
+
     <!-- HUD Overlay (Active during gameplay) -->
     <div id="hud-layer" class="hud-layer hidden">
       <!-- Top Left: Compact Glassmorphism Leaderboard -->
@@ -48,6 +53,12 @@
         <div id="score-label" class="score-label">FRUITS SLICED</div>
         <div id="current-score" class="score-value">0</div>
         <div id="combo-display" class="combo-badge hidden">COMBO x2!</div>
+      </div>
+
+      <!-- Top Center: Multiplayer Timer HUD -->
+      <div id="mp-timer-hud" class="mp-timer-hud glass-panel hidden">
+        <span class="timer-icon">⏱️</span>
+        <span id="mp-timer-value" class="timer-value">1:00</span>
       </div>
 
       <!-- Top Right: Lives and Level Badge -->
@@ -180,6 +191,11 @@
             ▶ PLAY GAME
           </button>
 
+          <!-- Multiplayer Option -->
+          <button id="menu-mp-btn" class="btn btn-primary btn-large btn-glow menu-btn-mp">
+            ⚔️ MULTIPLAYER ("SLICE TOGETHER")
+          </button>
+
           <!-- Modes Option: Level Selection -->
           <button id="menu-modes-btn" class="btn btn-secondary btn-large menu-btn-modes">
             ⚙️ MODES
@@ -289,6 +305,143 @@
         <div class="modal-actions">
           <button id="restart-btn" class="btn btn-primary btn-large btn-glow">🔄 Play Again</button>
           <button id="change-level-btn" class="btn btn-secondary">⚙️ Change Level</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multiplayer Hub Modal (Submenu / Create / Join) -->
+    <div id="mp-modal" class="modal-overlay hidden">
+      <div class="modal-card mp-card glass-panel glow-border">
+        
+        <!-- View 1: Submenu -->
+        <div id="mp-submenu-view" class="mp-view">
+          <div class="logo-badge">⚔️ MULTIPLAYER ARENA</div>
+          <h2>Slice Together!</h2>
+          <p>Compete in real-time fruit slicing matches with up to 4 players!</p>
+          <div class="menu-button-group">
+            <button id="mp-submenu-create-btn" class="btn btn-primary btn-large btn-glow">
+              ➕ Create Room
+            </button>
+            <button id="mp-submenu-join-btn" class="btn btn-secondary btn-large">
+              🔍 Join Room / Public Games
+            </button>
+            <button id="mp-back-to-main-btn" class="btn btn-secondary btn-large">
+              ⬅ Main Menu
+            </button>
+          </div>
+        </div>
+
+        <!-- View 2: Create Room -->
+        <div id="mp-create-view" class="mp-view hidden">
+          <h2>Create Multiplayer Room</h2>
+          <div class="create-form-grid">
+            <div class="form-row">
+              <label>Room Visibility</label>
+              <div class="toggle-switch-group">
+                <span>Private</span>
+                <label class="switch">
+                  <input type="checkbox" id="mp-visibility-toggle" checked>
+                  <span class="slider round"></span>
+                </label>
+                <span>Public</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Match Difficulty</label>
+              <div class="diff-btn-group">
+                <button class="mp-diff-btn btn-sm" data-diff="easy">🍏 EASY</button>
+                <button class="mp-diff-btn btn-sm active" data-diff="medium">🍊 MEDIUM</button>
+                <button class="mp-diff-btn btn-sm" data-diff="hard">🌶️ HARD</button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button id="mp-confirm-create-btn" class="btn btn-primary btn-large btn-glow">🚀 Create & Enter Lobby</button>
+            <button id="mp-create-back-btn" class="btn btn-secondary">⬅ Back</button>
+          </div>
+        </div>
+
+        <!-- View 3: Join Room -->
+        <div id="mp-join-view" class="mp-view hidden">
+          <h2>Join Multiplayer Match</h2>
+          <div class="join-sections">
+            <div class="join-code-box glass-panel">
+              <h3>Have a Code or Share Link?</h3>
+              <div class="input-group">
+                <input type="text" id="mp-code-input" placeholder="Enter 6-character room code or link..." maxlength="60">
+                <button id="mp-join-by-code-btn" class="btn btn-primary">Join Room ➔</button>
+              </div>
+            </div>
+            <div class="public-rooms-container">
+              <div class="public-rooms-header">
+                <h3>Public Games</h3>
+                <button id="mp-refresh-public-btn" class="icon-btn-inline" title="Refresh">🔄</button>
+              </div>
+              <div id="mp-public-rooms-list" class="public-rooms-list">
+                <div class="lb-loading">Searching public rooms...</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button id="mp-join-back-btn" class="btn btn-secondary">⬅ Back</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Multiplayer Lobby Modal -->
+    <div id="mp-lobby-modal" class="modal-overlay hidden">
+      <div class="modal-card lobby-card glass-panel glow-border">
+        <div class="lobby-header">
+          <div class="lobby-code-group">
+            <span class="label">ROOM CODE:</span>
+            <strong id="mp-lobby-code" class="code-tag">ABC123</strong>
+            <button id="mp-copy-code-btn" class="btn btn-sm btn-secondary">📋 Copy Code</button>
+            <button id="mp-copy-link-btn" class="btn btn-sm btn-secondary">🔗 Copy Share Link</button>
+          </div>
+          <div class="lobby-badges">
+            <span id="mp-lobby-badge" class="room-badge public">🌐 PUBLIC ROOM</span>
+            <span id="mp-lobby-diff" class="room-badge diff">MEDIUM</span>
+          </div>
+        </div>
+
+        <h3>Players in Room (Max 4)</h3>
+        <div id="mp-lobby-player-list" class="lobby-player-grid">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Host Controls -->
+        <div id="mp-host-controls" class="host-controls-panel glass-panel hidden">
+          <div class="control-row">
+            <span>See Others POV Feeds (PC Only WebRTC Video):</span>
+            <label class="switch">
+              <input type="checkbox" id="mp-see-others-toggle" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <button id="mp-start-match-btn" class="btn btn-primary btn-large btn-glow" disabled>
+            🚀 START MATCH
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button id="mp-leave-lobby-btn" class="btn btn-danger">🚪 Leave Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multiplayer Results Modal -->
+    <div id="mp-results-modal" class="modal-overlay hidden">
+      <div class="modal-card results-card glass-panel glow-border">
+        <div class="logo-badge">🏆 MATCH COMPLETED</div>
+        <h2>Final Standings</h2>
+        <div id="mp-results-list" class="results-list">
+          <!-- Dynamically populated -->
+        </div>
+        <div class="modal-actions">
+          <button id="mp-play-again-btn" class="btn btn-primary btn-large btn-glow hidden">🔄 Play Again (Lobby)</button>
+          <button id="mp-results-menu-btn" class="btn btn-secondary">⬅ Main Menu</button>
         </div>
       </div>
     </div>

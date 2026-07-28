@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "fruit-slice-live-party",
+  "main": "party/room.ts",
+  "compatibilityDate": "2024-01-01"
+}

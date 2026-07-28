@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.14",
-    "@vercel/kv": "^3.0.0"
+    "@vercel/kv": "^3.0.0",
+    "partysocket": "^1.0.2"
   },
   "devDependencies": {
+    "partykit": "^0.0.105",
     "vite": "^5.3.1"
   }
 }
