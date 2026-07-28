@@ -305,6 +305,34 @@ export class MultiplayerUIManager {
     }
   }
 
+  updateRemoteCameraFrame(peerId, base64Jpeg) {
+    if (!peerId || !base64Jpeg) return;
+    let imgEl = document.getElementById(`remote-img-${peerId}`);
+    const noCamEl = document.getElementById(`no-cam-${peerId}`);
+
+    if (!imgEl) {
+      const wrapper = document.querySelector(`#pov-tile-${peerId} .pov-video-wrapper`);
+      if (wrapper) {
+        imgEl = document.createElement('img');
+        imgEl.id = `remote-img-${peerId}`;
+        imgEl.className = 'remote-cam-img';
+        imgEl.style.width = '100%';
+        imgEl.style.height = '100%';
+        imgEl.style.objectFit = 'cover';
+        imgEl.style.transform = 'scaleX(-1)';
+        imgEl.style.position = 'absolute';
+        imgEl.style.inset = '0';
+        wrapper.appendChild(imgEl);
+      }
+    }
+
+    if (imgEl) {
+      imgEl.src = base64Jpeg;
+      imgEl.style.display = 'block';
+      if (noCamEl) noCamEl.classList.add('hidden');
+    }
+  }
+
   showRemoteCameraUnavailable(peerId) {
     const noCamEl = document.getElementById(`no-cam-${peerId}`);
     if (noCamEl) noCamEl.classList.remove('hidden');

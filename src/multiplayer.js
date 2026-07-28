@@ -438,6 +438,72 @@ export class MultiplayerManager {
     });
   }
 
+  startCamFrameRelay() {
+    this.stopCamFrameRelay();
+
+    if (!this.camCanvas) {
+      this.camCanvas = document.createElement('canvas');
+      this.camCanvas.width = 320;
+      this.camCanvas.height = 240;
+      this.camCtx = this.camCanvas.getContext('2d');
+    }
+
+    const captureAndPushFrame = async () => {
+      if (!this.currentRoomCode || !this.myId || this.roomState?.matchState !== 'playing') return;
+      const videoEl = this.game?.camera?.video;
+      if (!videoEl || videoEl.readyState < 2) return;
+
+      try {
+        this.camCtx.drawImage(videoEl, 0, 0, 320, 240);
+        const jpegData = this.camCanvas.toDataURL('image/jpeg', 0.4);
+
+        fetch(`/api/cam-frame?code=${this.currentRoomCode}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: this.currentRoomCode,
+            peerId: this.myId,
+            frame: jpegData
+          })
+        }).catch(() => {});
+      } catch (e) {}
+    };
+
+    const fetchRemoteFrames = async () => {
+      if (!this.currentRoomCode || this.roomState?.matchState !== 'playing') return;
+      try {
+        const res = await fetch(`/api/cam-frame?code=${this.currentRoomCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.frames) {
+            Object.keys(data.frames).forEach((peerId) => {
+              if (peerId !== this.myId && data.frames[peerId]?.frame) {
+                this.mpUI.updateRemoteCameraFrame(peerId, data.frames[peerId].frame);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    };
+
+    captureAndPushFrame();
+    fetchRemoteFrames();
+
+    this.camPushInterval = setInterval(captureAndPushFrame, 300);
+    this.camFetchInterval = setInterval(fetchRemoteFrames, 300);
+  }
+
+  stopCamFrameRelay() {
+    if (this.camPushInterval) {
+      clearInterval(this.camPushInterval);
+      this.camPushInterval = null;
+    }
+    if (this.camFetchInterval) {
+      clearInterval(this.camFetchInterval);
+      this.camFetchInterval = null;
+    }
+  }
+
   getLocalCameraStream() {
     if (this.game?.camera?.stream) {
       const tracks = this.game.camera.stream.getVideoTracks ? this.game.camera.stream.getVideoTracks() : [];
@@ -576,6 +642,7 @@ export class MultiplayerManager {
         this.mpUI.hideSidebarPOV();
         this.mpUI.hideTimerHUD();
         this.stopMatchTimer();
+        this.stopCamFrameRelay();
       }
       this.mpUI.showLobby();
       this.mpUI.renderLobbyState(this.roomState, this.myId, this.isHost);
@@ -596,6 +663,9 @@ export class MultiplayerManager {
         }
       }
 
+      // Start Camera Frame Relay
+      this.startCamFrameRelay();
+
       // Initiate WebRTC video calls if seeOthers is enabled
       if (seeOthers && players) {
         players.forEach(p => {
@@ -613,6 +683,7 @@ export class MultiplayerManager {
         this.activeMatchState = 'ended';
         this.game.stopGame();
         this.stopMatchTimer();
+        this.stopCamFrameRelay();
 
         const isHost = this.roomState.hostId === this.myId || this.isHost;
         this.mpUI.renderResults(players, isHost);
@@ -656,6 +727,7 @@ export class MultiplayerManager {
   disconnectPeer() {
     this.stopMatchTimer();
     this.stopStateSyncPoller();
+    this.stopCamFrameRelay();
 
     if (this.currentRoomCode && this.myId) {
       this.pushRoomStateToServer({
