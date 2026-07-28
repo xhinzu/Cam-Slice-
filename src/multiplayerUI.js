@@ -286,7 +286,7 @@ export class MultiplayerUIManager {
       videoEl.muted = true;
       
       const hideOverlay = () => {
-        if (noCamEl && videoEl.readyState >= 2) {
+        if (noCamEl) {
           noCamEl.classList.add('hidden');
         }
       };
@@ -294,11 +294,14 @@ export class MultiplayerUIManager {
       videoEl.onloadedmetadata = hideOverlay;
       videoEl.onloadeddata = hideOverlay;
       videoEl.onplaying = hideOverlay;
+      videoEl.oncanplay = hideOverlay;
 
       const playPromise = videoEl.play();
       if (playPromise !== undefined) {
         playPromise.then(() => hideOverlay()).catch(() => {});
       }
+
+      setTimeout(hideOverlay, 300);
     }
   }
 

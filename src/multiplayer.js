@@ -533,7 +533,16 @@ export class MultiplayerManager {
   }
 
   callPeerVideo(targetPeerId) {
-    if (!this.peer || !targetPeerId || targetPeerId === this.myId || targetPeerId === 'connecting' || this.mediaCalls.has(targetPeerId)) return;
+    if (!this.peer || !targetPeerId || targetPeerId === this.myId || targetPeerId === 'connecting') return;
+
+    const existingCall = this.mediaCalls.get(targetPeerId);
+    if (existingCall && existingCall.open) return;
+
+    if (existingCall) {
+      try { existingCall.close(); } catch (e) {}
+      this.mediaCalls.delete(targetPeerId);
+    }
+
     const localStream = this.getLocalCameraStream();
 
     try {
@@ -542,6 +551,12 @@ export class MultiplayerManager {
         this.mediaCalls.set(targetPeerId, call);
         call.on('stream', (remoteStream) => {
           this.mpUI.attachRemoteVideoStream(targetPeerId, remoteStream);
+        });
+        call.on('close', () => {
+          this.mediaCalls.delete(targetPeerId);
+        });
+        call.on('error', () => {
+          this.mediaCalls.delete(targetPeerId);
         });
       }
     } catch (e) {
