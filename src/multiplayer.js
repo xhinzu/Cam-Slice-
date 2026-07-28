@@ -481,6 +481,7 @@ export class MultiplayerManager {
       this.mpUI.showLobby();
       this.mpUI.renderLobbyState(this.roomState, this.myId);
     } else if (matchState === 'playing') {
+      this.appUI.hideAllModals();
       this.mpUI.hideAllMPModals();
 
       // Launch 60-second multiplayer match
