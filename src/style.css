@@ -1892,19 +1892,14 @@ input:checked + .slider:before {
   height: 14px;
   border-radius: 50%;
   background: #ff3838;
-  box-shadow: 0 0 12px #ff3838, 0 0 24px #ff3838;
+  box-shadow: none;
   margin-top: -10px;
 }
 
 .neon-font {
   font-family: 'Caveat', 'Pacifico', cursive;
   color: #00ff88;
-  text-shadow: 
-    0 0 5px #00ff88,
-    0 0 15px #00ff88,
-    0 0 30px #00ff88,
-    0 0 50px #00ff88,
-    0 0 80px #00ff88;
+  text-shadow: none;
   line-height: 0.9;
 }
 
@@ -1931,7 +1926,7 @@ input:checked + .slider:before {
 .neon-star {
   font-size: 2.2rem;
   color: #a3cb38;
-  text-shadow: 0 0 10px #a3cb38;
+  text-shadow: none;
 }
 
 /* Katana Sword Overlay */
