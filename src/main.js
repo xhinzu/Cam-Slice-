@@ -9,7 +9,7 @@ import { UIManager } from './ui.js';
 import { leaderboard } from './leaderboard.js';
 import { GameManager } from './game.js';
 import { MultiplayerManager } from './multiplayer.js';
-import { bgm } from './audio.js';
+import { bgm, sounds } from './audio.js';
 import { userStore } from './userStore.js';
 
 class AppController {
@@ -169,6 +169,7 @@ class AppController {
       const inputVal = this.ui.nameInput.value.trim();
       if (inputVal) {
         this.ui.setPlayerName(inputVal);
+        this.updateProfileAndStoreUI();
         this.ui.showTutorial();
         // Refresh leaderboard active player highlight
         leaderboard.subscribeTopScores((scores) => {
@@ -222,8 +223,9 @@ class AppController {
       });
     }
 
-    if (this.ui.menuEditNameBtn) {
-      this.ui.menuEditNameBtn.addEventListener('click', () => {
+    const profileEditNameBtn = document.getElementById('profile-edit-name-btn');
+    if (profileEditNameBtn) {
+      profileEditNameBtn.addEventListener('click', () => {
         this.ui.showNameEntry();
       });
     }
@@ -231,6 +233,7 @@ class AppController {
     if (this.ui.backToMenuBtn) {
       this.ui.backToMenuBtn.addEventListener('click', () => {
         this.ui.showMainMenu(this.selectedLevel);
+        this.updateProfileAndStoreUI();
       });
     }
 
