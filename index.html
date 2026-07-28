@@ -6,10 +6,10 @@
   <title>Fruit Slice Live - Webcam Gesture Slicing Game</title>
   <meta name="description" content="A real-time webcam gesture fruit slicing game powered by Google MediaPipe HandLandmarker. Slice falling fruits with your index finger!">
   
-  <!-- Google Fonts: Outfit & Inter -->
+  <!-- Google Fonts: Outfit, Inter, Caveat, Fredoka -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="./src/style.css">
 </head>
@@ -169,48 +169,110 @@
       </div>
     </div>
 
-    <!-- Main Game Menu Modal -->
+    <!-- Main Game Menu Modal (Arcade Cyberpunk / Reference Design) -->
     <div id="menu-modal" class="modal-overlay hidden">
-      <div class="modal-card menu-card glass-panel glow-border">
-        <div class="menu-title-container">
-          <img src="./title-logo.png" alt="Fruit Slice Live" class="menu-title-img">
+      <div class="ref-menu-card glass-panel">
+        
+        <!-- Top LED Lights -->
+        <div class="console-leds">
+          <div class="led-dot led-red"></div>
+          <div class="led-dot led-green"></div>
         </div>
 
-        <div class="player-welcome-badge">
-          <span>Welcome back, <strong id="menu-player-name" class="highlight-name">Slicer</strong>!</span>
-          <button id="menu-edit-name-btn" class="icon-btn-inline" title="Edit Slicer Name">✏️</button>
+        <div class="ref-menu-content">
+          
+          <!-- Left Side: 3D Capsule Speech-Bubble Buttons -->
+          <div class="ref-buttons-column">
+            <!-- Play Button -->
+            <button id="menu-play-btn" class="capsule-btn capsule-play">
+              <span class="capsule-text">Play</span>
+              <div class="capsule-tail"></div>
+              <!-- Pixel Hand Cursor -->
+              <div class="hover-pixel-cursor">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 2V14L10 11L13 17L15 16L13 10L17 10L7 2Z" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+                </svg>
+              </div>
+            </button>
+
+            <!-- Modes (Multiplayer & Levels) Button -->
+            <button id="menu-modes-btn" class="capsule-btn capsule-modes">
+              <span class="capsule-text">Modes</span>
+              <div class="capsule-tail"></div>
+            </button>
+
+            <!-- Quit Button -->
+            <button id="menu-quit-btn" class="capsule-btn capsule-quit">
+              <span class="capsule-text">Quit</span>
+              <div class="capsule-tail"></div>
+            </button>
+
+            <!-- Hidden compatibility buttons -->
+            <button id="menu-mp-btn" class="hidden"></button>
+            <button id="menu-tutorial-btn" class="hidden"></button>
+          </div>
+
+          <!-- Right Side: Radiant Green Neon Logo & Katana Sword -->
+          <div class="ref-logo-column">
+            <div class="neon-logo-wrapper">
+              <div class="neon-row-cam">
+                <span class="neon-dot-red"></span>
+                <span class="neon-font neon-text-cam">Cam</span>
+              </div>
+              <div class="neon-font neon-text-slicer">Slicer</div>
+              <div class="neon-font neon-text-live">live <span class="neon-star">✦</span></div>
+
+              <!-- Katana Sword Passing Horizontally Across Logo -->
+              <div class="katana-sword-container">
+                <svg class="katana-svg" viewBox="0 0 600 80" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="katanaBladeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#4b6584"/>
+                      <stop offset="15%" stop-color="#ffffff"/>
+                      <stop offset="45%" stop-color="#d1d8e0"/>
+                      <stop offset="75%" stop-color="#ffffff"/>
+                      <stop offset="100%" stop-color="#778ca3"/>
+                    </linearGradient>
+                    <linearGradient id="katanaEdgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#ffffff"/>
+                      <stop offset="100%" stop-color="#00ff88"/>
+                    </linearGradient>
+                    <filter id="katanaGlow">
+                      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <!-- Handle (Tsuka) -->
+                  <path d="M 10,42 L 130,36 L 130,54 L 10,48 Z" fill="#1e272e" stroke="#2f3640" stroke-width="2"/>
+                  <path d="M 22,41 L 32,52 M 37,40 L 47,52 M 52,39 L 62,53 M 67,39 L 77,53 M 82,38 L 92,54 M 97,38 L 107,54 M 112,37 L 122,55" stroke="#dcdde1" stroke-width="2"/>
+                  <path d="M 32,41 L 22,51 M 47,40 L 37,52 M 62,39 L 52,53 M 77,39 L 67,53 M 92,38 L 82,54 M 107,38 L 97,54 M 122,37 L 112,55" stroke="#dcdde1" stroke-width="2"/>
+                  <!-- Tsuba Guard -->
+                  <ellipse cx="132" cy="45" rx="5" ry="15" fill="#2f3640" stroke="#dcdde1" stroke-width="2"/>
+                  <!-- Blade Body -->
+                  <path d="M 137,36 Q 350,30 580,18 L 595,24 Q 360,48 137,54 Z" fill="url(#katanaBladeGrad)" filter="url(#katanaGlow)"/>
+                  <!-- Blade Edge Line -->
+                  <path d="M 137,54 Q 360,48 595,24 L 580,18 Q 350,47 137,51 Z" fill="url(#katanaEdgeGrad)" opacity="0.95"/>
+                  <!-- Blade Ridge -->
+                  <path d="M 137,45 Q 350,39 570,21" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.85"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="current-mode-indicator">
-          Selected Mode: <span id="menu-selected-mode-tag" class="mode-badge">MEDIUM</span>
+        <!-- Player Welcome Bar & Version Tag -->
+        <div class="ref-menu-footer">
+          <div class="version-tag">Version 0.67</div>
+          <div class="footer-player-info">
+            <span>Slicer: <strong id="menu-player-name" class="highlight-name">Ninja</strong></span>
+            <button id="menu-edit-name-btn" class="icon-btn-inline" title="Edit Name">✏️</button>
+            <span id="menu-selected-mode-tag" class="hidden">MEDIUM</span>
+          </div>
         </div>
 
-        <div class="menu-button-group">
-          <!-- Play Option: Starts the game -->
-          <button id="menu-play-btn" class="btn btn-primary btn-large btn-glow menu-btn-play">
-            ▶ PLAY GAME
-          </button>
-
-          <!-- Multiplayer Option -->
-          <button id="menu-mp-btn" class="btn btn-primary btn-large btn-glow menu-btn-mp">
-            ⚔️ MULTIPLAYER ("SLICE TOGETHER")
-          </button>
-
-          <!-- Modes Option: Level Selection -->
-          <button id="menu-modes-btn" class="btn btn-secondary btn-large menu-btn-modes">
-            ⚙️ MODES
-          </button>
-
-          <!-- How to Play Option -->
-          <button id="menu-tutorial-btn" class="btn btn-secondary btn-large">
-            📖 HOW TO PLAY
-          </button>
-
-          <!-- Quit Option: Closes website -->
-          <button id="menu-quit-btn" class="btn btn-danger btn-large menu-btn-quit">
-            🚪 QUIT
-          </button>
-        </div>
       </div>
     </div>
 

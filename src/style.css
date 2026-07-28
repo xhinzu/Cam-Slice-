@@ -1575,3 +1575,294 @@ input:checked + .slider:before {
   color: var(--color-blade-neon);
 }
 
+/* ==========================================================================
+   Reference Arcade Menu Card ("Cam Slicer Live")
+   ========================================================================== */
+.ref-menu-card {
+  position: relative;
+  width: 90%;
+  max-width: 920px;
+  background: radial-gradient(circle at 40% 50%, #151d2a 0%, #090d15 85%);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 36px 44px 28px 44px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+/* Console LED Lights */
+.console-leds {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+}
+
+.led-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.led-red {
+  background: #ff4757;
+  box-shadow: 0 0 10px #ff4757, 0 0 20px #ff4757;
+}
+
+.led-green {
+  background: #2ed573;
+  box-shadow: 0 0 10px #2ed573, 0 0 20px #2ed573;
+}
+
+/* Split Content Layout */
+.ref-menu-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 380px;
+}
+
+@media (max-width: 768px) {
+  .ref-menu-content {
+    flex-direction: column;
+    gap: 30px;
+  }
+}
+
+/* Buttons Column */
+.ref-buttons-column {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 240px;
+  flex-shrink: 0;
+}
+
+/* Capsule 3D Speech-Bubble Button */
+.capsule-btn {
+  position: relative;
+  width: 100%;
+  height: 68px;
+  border-radius: 36px;
+  border: 4px solid #b8c4d0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s, filter 0.2s;
+  box-shadow: 
+    inset 0 3px 6px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.6),
+    0 10px 25px rgba(0, 0, 0, 0.8);
+}
+
+.capsule-btn:hover {
+  transform: scale(1.05) translateY(-3px);
+  filter: brightness(1.15);
+  box-shadow: 
+    inset 0 4px 8px rgba(255, 255, 255, 0.9),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.6),
+    0 15px 30px rgba(0, 0, 0, 0.9);
+}
+
+.capsule-btn:active {
+  transform: scale(0.98) translateY(1px);
+}
+
+.capsule-text {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 2.2rem;
+  color: #1e272e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4), 0 -1px 0 rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.5px;
+}
+
+/* Speech Bubble Tail Notch */
+.capsule-tail {
+  position: absolute;
+  bottom: -8px;
+  left: 24px;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 14px solid #b8c4d0;
+  transform: rotate(25deg);
+}
+
+/* Play Button Gradient */
+.capsule-play {
+  background: linear-gradient(180deg, #2ecc71 0%, #27ae60 55%, #1e824c 100%);
+  border-color: #a0aab4;
+}
+
+.capsule-play .capsule-text {
+  color: #0c3b20;
+}
+
+.capsule-play .capsule-tail {
+  border-top-color: #27ae60;
+}
+
+/* Modes Button Gradient */
+.capsule-modes {
+  background: linear-gradient(180deg, #f39c12 0%, #e67e22 55%, #d35400 100%);
+  border-color: #b0b9c2;
+}
+
+.capsule-modes .capsule-text {
+  color: #3d1c02;
+}
+
+.capsule-modes .capsule-tail {
+  border-top-color: #e67e22;
+}
+
+/* Quit Button Gradient */
+.capsule-quit {
+  background: linear-gradient(180deg, #e74c3c 0%, #c0392b 55%, #962d22 100%);
+  border-color: #a8b2bc;
+}
+
+.capsule-quit .capsule-text {
+  color: #3b0904;
+}
+
+.capsule-quit .capsule-tail {
+  border-top-color: #c0392b;
+}
+
+/* Pixelated Hover Pointer Hand */
+.hover-pixel-cursor {
+  position: absolute;
+  right: -16px;
+  bottom: -12px;
+  opacity: 0;
+  transform: scale(0.8) rotate(-10deg);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.capsule-btn:hover .hover-pixel-cursor {
+  opacity: 1;
+  transform: scale(1.1) rotate(0deg);
+}
+
+/* Right Side Neon Logo Container */
+.ref-logo-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.neon-logo-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  user-select: none;
+}
+
+.neon-row-cam {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.neon-dot-red {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff3838;
+  box-shadow: 0 0 12px #ff3838, 0 0 24px #ff3838;
+  margin-top: -10px;
+}
+
+.neon-font {
+  font-family: 'Caveat', 'Pacifico', cursive;
+  color: #00ff88;
+  text-shadow: 
+    0 0 5px #00ff88,
+    0 0 15px #00ff88,
+    0 0 30px #00ff88,
+    0 0 50px #00ff88,
+    0 0 80px #00ff88;
+  line-height: 0.9;
+}
+
+.neon-text-cam {
+  font-size: 5.2rem;
+  font-weight: 700;
+}
+
+.neon-text-slicer {
+  font-size: 6.8rem;
+  font-weight: 700;
+  margin-left: 20px;
+  margin-top: -15px;
+}
+
+.neon-text-live {
+  font-size: 4.8rem;
+  font-weight: 700;
+  align-self: flex-end;
+  margin-right: 30px;
+  margin-top: -20px;
+}
+
+.neon-star {
+  font-size: 2.2rem;
+  color: #a3cb38;
+  text-shadow: 0 0 10px #a3cb38;
+}
+
+/* Katana Sword Overlay */
+.katana-sword-container {
+  position: absolute;
+  top: 48%;
+  left: -20px;
+  width: 110%;
+  transform: translateY(-50%) rotate(-6deg);
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.8));
+}
+
+.katana-svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Footer Section */
+.ref-menu-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.version-tag {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2ed573;
+  text-shadow: 0 0 8px rgba(46, 213, 115, 0.6);
+}
+
+.footer-player-info {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
