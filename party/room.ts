@@ -89,11 +89,37 @@ export default class MultiplayerRoomServer implements Server {
     this.broadcastState();
   }
 
+  publicRoomsMap: Map<string, any> = new Map();
+
   onMessage(message: string, sender: Connection) {
     let data: any;
     try {
       data = JSON.parse(message);
     } catch (e) {
+      return;
+    }
+
+    if (this.party.id === "lobby") {
+      if (data.type === "register-public-room" && data.code) {
+        this.publicRoomsMap.set(data.code, {
+          code: data.code,
+          hostName: data.hostName || "Host",
+          difficulty: data.difficulty || "medium",
+          playerCount: data.playerCount || 1,
+          updatedAt: Date.now()
+        });
+      } else if (data.type === "get-public-rooms") {
+        const now = Date.now();
+        const activeRooms = Array.from(this.publicRoomsMap.values()).filter(
+          (r: any) => now - r.updatedAt < 900000
+        );
+        sender.send(
+          JSON.stringify({
+            type: "public-rooms-list",
+            rooms: activeRooms
+          })
+        );
+      }
       return;
     }
 

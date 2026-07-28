@@ -106,20 +106,14 @@ export class MultiplayerManager {
 
     // Copy Code & Copy Link Buttons
     this.mpUI.mpCopyCodeBtn.addEventListener('click', () => {
-      if (this.currentRoomCode) {
-        navigator.clipboard.writeText(this.currentRoomCode);
-        this.mpUI.mpCopyCodeBtn.textContent = 'Copied! ✓';
-        setTimeout(() => (this.mpUI.mpCopyCodeBtn.textContent = '📋 Copy Code'), 2000);
-      }
+      const code = this.currentRoomCode || (this.roomState ? this.roomState.roomCode : '');
+      this.copyTextToClipboard(code, this.mpUI.mpCopyCodeBtn, 'Copied! ✓', '📋 Copy Code');
     });
 
     this.mpUI.mpCopyLinkBtn.addEventListener('click', () => {
-      if (this.currentRoomCode) {
-        const url = `${window.location.origin}${window.location.pathname}?room=${this.currentRoomCode}`;
-        navigator.clipboard.writeText(url);
-        this.mpUI.mpCopyLinkBtn.textContent = 'Link Copied! ✓';
-        setTimeout(() => (this.mpUI.mpCopyLinkBtn.textContent = '🔗 Copy Share Link'), 2000);
-      }
+      const code = this.currentRoomCode || (this.roomState ? this.roomState.roomCode : '');
+      const url = `${window.location.origin}${window.location.pathname}?room=${code}`;
+      this.copyTextToClipboard(url, this.mpUI.mpCopyLinkBtn, 'Link Copied! ✓', '🔗 Copy Share Link');
     });
 
     // Host Controls: See Others Toggle
@@ -190,6 +184,49 @@ export class MultiplayerManager {
     this.checkURLJoin();
   }
 
+  copyTextToClipboard(text, btnEl, successLabel, defaultHTML) {
+    if (!text) return;
+
+    const fallbackCopy = (str) => {
+      const el = document.createElement('textarea');
+      el.value = str;
+      el.setAttribute('readonly', '');
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      el.style.top = '-9999px';
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Fallback copy error:', err);
+      }
+      document.body.removeChild(el);
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (btnEl) {
+          btnEl.innerHTML = successLabel;
+          setTimeout(() => { btnEl.innerHTML = defaultHTML; }, 2000);
+        }
+      }).catch(() => {
+        fallbackCopy(text);
+        if (btnEl) {
+          btnEl.innerHTML = successLabel;
+          setTimeout(() => { btnEl.innerHTML = defaultHTML; }, 2000);
+        }
+      });
+    } else {
+      fallbackCopy(text);
+      if (btnEl) {
+        btnEl.innerHTML = successLabel;
+        setTimeout(() => { btnEl.innerHTML = defaultHTML; }, 2000);
+      }
+    }
+  }
+
   extractRoomCode(input) {
     if (!input) return '';
     if (input.length === 6) return input.toUpperCase();
@@ -218,9 +255,46 @@ export class MultiplayerManager {
   }
 
   fetchPublicRooms() {
-    this.mpUI.renderPublicRooms([], (code) => {
-      this.joinRoom(code);
-    });
+    const publicRooms = [];
+
+    // Check local storage cache first
+    try {
+      const raw = localStorage.getItem('fruit_slice_recent_public_room');
+      if (raw) {
+        const item = JSON.parse(raw);
+        if (Date.now() - item.timestamp < 1800000) { // 30 mins
+          publicRooms.push(item);
+        }
+      }
+    } catch (e) {}
+
+    // Query global PartyKit lobby socket
+    try {
+      const lobbySocket = new PartySocket({ host: this.getPartyHost(), room: 'lobby' });
+      lobbySocket.addEventListener('open', () => {
+        lobbySocket.send(JSON.stringify({ type: 'get-public-rooms' }));
+      });
+      lobbySocket.addEventListener('message', (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'public-rooms-list' && Array.isArray(msg.rooms)) {
+            msg.rooms.forEach(r => {
+              if (!publicRooms.some(p => p.code === r.code)) {
+                publicRooms.push(r);
+              }
+            });
+            this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
+            lobbySocket.close();
+          }
+        } catch (e) {}
+      });
+
+      setTimeout(() => {
+        this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
+      }, 1000);
+    } catch (e) {
+      this.mpUI.renderPublicRooms(publicRooms, (code) => this.joinRoom(code));
+    }
   }
 
   createAndJoinRoom(roomCode, isPublic, difficulty) {
@@ -228,7 +302,6 @@ export class MultiplayerManager {
     this.myId = 'host-' + Math.random().toString(36).substring(2, 7);
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
 
-    // Immediately render Lobby UI for responsive feedback
     this.roomState = {
       roomCode,
       isPublic,
@@ -241,6 +314,19 @@ export class MultiplayerManager {
         { id: this.myId, name: playerName, isHost: true, ready: true, score: 0 }
       ]
     };
+
+    if (isPublic) {
+      try {
+        const publicRoomObj = {
+          code: roomCode,
+          hostName: playerName,
+          difficulty,
+          playerCount: 1,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('fruit_slice_recent_public_room', JSON.stringify(publicRoomObj));
+      } catch (e) {}
+    }
 
     this.mpUI.showLobby();
     this.mpUI.renderLobbyState(this.roomState, this.myId);
@@ -258,6 +344,23 @@ export class MultiplayerManager {
         );
       }
     });
+
+    // Register with PartyKit global lobby socket if public
+    if (isPublic) {
+      try {
+        const lobbySocket = new PartySocket({ host: this.getPartyHost(), room: 'lobby' });
+        lobbySocket.addEventListener('open', () => {
+          lobbySocket.send(JSON.stringify({
+            type: 'register-public-room',
+            code: roomCode,
+            hostName: playerName,
+            difficulty,
+            playerCount: 1
+          }));
+          setTimeout(() => lobbySocket.close(), 1000);
+        });
+      } catch (e) {}
+    }
   }
 
   joinRoom(roomCode) {
