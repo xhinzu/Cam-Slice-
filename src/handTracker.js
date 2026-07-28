@@ -157,10 +157,10 @@ export class HandTrackerManager {
   }
 
   /**
-   * Render glowing neon blade trails and fingertip indicator nodes with ZERO shadowBlur penalty.
-   * Uses additive blending (globalCompositeOperation = 'lighter') for 60+ FPS neon glow.
+   * Render glowing neon blade trails and fingertip indicator nodes with custom cursor styles.
+   * Supports Cyan, Blue, Red, Lime, Gold, and Rare Chroma (RGB rainbow fade).
    */
-  drawBladeTrails(ctx, bladeSegments) {
+  drawBladeTrails(ctx, bladeSegments, cursorStyle = 'cyan') {
     if (!bladeSegments || bladeSegments.length === 0) return;
 
     ctx.save();
@@ -168,12 +168,34 @@ export class HandTrackerManager {
     ctx.lineJoin = 'round';
     ctx.globalCompositeOperation = 'lighter'; // Fast GPU additive neon blend
 
+    const getCursorColor = (isSlicing) => {
+      if (!isSlicing) return { glow: '255, 255, 255', hex: '#ffffff' };
+      const now = performance.now();
+      switch (cursorStyle) {
+        case 'blue':
+          return { glow: '59, 130, 246', hex: '#3b82f6' };
+        case 'red':
+          return { glow: '255, 71, 87', hex: '#ff4757' };
+        case 'lime':
+          return { glow: '46, 213, 115', hex: '#2ed573' };
+        case 'gold':
+          return { glow: '255, 165, 2', hex: '#ffa502' };
+        case 'chroma': {
+          const hue = (now / 12) % 360;
+          return { glow: `hsl(${hue}, 100%, 60%)`, hex: `hsl(${hue}, 100%, 60%)`, isHSL: true };
+        }
+        case 'cyan':
+        default:
+          return { glow: '0, 242, 254', hex: '#00f2fe' };
+      }
+    };
+
     bladeSegments.forEach(segment => {
       const history = segment.history;
       if (!history || history.length < 2) return;
 
       const isSlicing = segment.isSlicing;
-      const glowColor = isSlicing ? '0, 242, 254' : '255, 255, 255';
+      const colorObj = getCursorColor(isSlicing);
 
       // 1. Wide Neon Outer Glow Trail
       for (let i = 1; i < history.length; i++) {
@@ -181,19 +203,15 @@ export class HandTrackerManager {
         const p2 = history[i];
         const progress = i / history.length;
 
+        const strokeStyleGlow = colorObj.isHSL 
+          ? colorObj.glow 
+          : `rgba(${colorObj.glow}, ${0.6 * progress})`;
+
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
         ctx.lineWidth = (isSlicing ? 20 : 12) * progress;
-        ctx.strokeStyle = `rgba(${glowColor}, ${0.5 * progress})`;
-        ctx.stroke();
-
-        // Medium Glow Core
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineWidth = (isSlicing ? 10 : 6) * progress;
-        ctx.strokeStyle = `rgba(${glowColor}, ${0.85 * progress})`;
+        ctx.strokeStyle = strokeStyleGlow;
         ctx.stroke();
 
         // Hot White Core Blade Edge
@@ -210,8 +228,8 @@ export class HandTrackerManager {
 
       // Outer Aura Ring
       ctx.beginPath();
-      ctx.arc(tip.x, tip.y, 16, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(0, 242, 254, 0.7)';
+      ctx.arc(tip.x, tip.y, 14, 0, Math.PI * 2);
+      ctx.strokeStyle = colorObj.hex;
       ctx.lineWidth = 3;
       ctx.stroke();
 

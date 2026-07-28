@@ -185,11 +185,18 @@
     <div id="menu-modal" class="modal-overlay hidden">
       <div class="ref-menu-card glass-panel">
         
-        <!-- Top LED Lights -->
+        <!-- Top LED Lights & User Profile Button -->
         <div class="console-leds">
           <div class="led-dot led-red"></div>
           <div class="led-dot led-green"></div>
         </div>
+
+        <!-- Top Right Corner User Profile Icon Button -->
+        <button id="menu-user-btn" class="menu-top-user-btn" title="User Profile & Stats">
+          <div id="menu-user-avatar-box" class="menu-avatar-box">
+            <span id="menu-avatar-display-el">👤</span>
+          </div>
+        </button>
 
         <div class="ref-menu-content">
           
@@ -233,11 +240,11 @@
           <div class="ref-logo-column">
             <div class="neon-logo-wrapper">
               <div class="neon-row-cam">
-                <span class="neon-dot-red"></span>
+                <div class="neon-dot-red"></div>
                 <span class="neon-font neon-text-cam">Cam</span>
               </div>
-              <div class="neon-font neon-text-slicer">Slicer</div>
-              <div class="neon-font neon-text-live">live <span class="neon-star">✦</span></div>
+              <span class="neon-font neon-text-slicer">Slicer</span>
+              <span class="neon-font neon-text-live">live <span class="neon-star">✦</span></span>
 
               <!-- Katana Sword Passing Horizontally Across Logo -->
               <div class="katana-sword-container">
@@ -280,7 +287,7 @@
           </div>
         </div>
 
-        <!-- Player Welcome Bar & Version Tag -->
+        <!-- Player Welcome Bar & Version Tag + Store Cart Button -->
         <div class="ref-menu-footer">
           <div class="version-tag">Version 0.67</div>
           <div class="footer-player-info">
@@ -290,6 +297,140 @@
           </div>
         </div>
 
+        <!-- Bottom Right Corner Cursors Store Button -->
+        <button id="menu-store-btn" class="menu-bottom-store-btn" title="Cursors Store">
+          <span class="store-cart-icon">🛒</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- User Profile & Stats Modal (Canva Layout) -->
+    <div id="user-profile-modal" class="modal-overlay hidden">
+      <div class="modal-card profile-card glass-panel glow-border">
+        <h2>USER PROFILE</h2>
+
+        <div class="profile-layout-content">
+          <!-- Left Side: Profile Picture & Username -->
+          <div class="profile-left-col">
+            <div class="profile-avatar-label">PROFILE PICTURE</div>
+            <div class="profile-avatar-wrapper">
+              <div id="profile-avatar-display" class="profile-avatar-display">
+                <span id="profile-emoji-avatar">🥷</span>
+                <img id="profile-custom-img" class="profile-custom-img hidden" src="" alt="Avatar" />
+              </div>
+              <button id="edit-avatar-btn" class="edit-avatar-btn" title="Change Avatar">✏️</button>
+              <input type="file" id="avatar-file-input" class="hidden" accept="image/*">
+            </div>
+
+            <!-- Emoji Picker Drawer -->
+            <div id="emoji-picker-drawer" class="emoji-picker-drawer hidden">
+              <div class="emoji-picker-title">Pick Avatar Emoji or Upload</div>
+              <div class="emoji-grid">
+                <button class="emoji-opt-btn" data-emoji="🥷">🥷</button>
+                <button class="emoji-opt-btn" data-emoji="🍉">🍉</button>
+                <button class="emoji-opt-btn" data-emoji="🥊">🥊</button>
+                <button class="emoji-opt-btn" data-emoji="⚡">⚡</button>
+                <button class="emoji-opt-btn" data-emoji="👑">👑</button>
+                <button class="emoji-opt-btn" data-emoji="🔥">🔥</button>
+                <button class="emoji-opt-btn" data-emoji="🐉">🐉</button>
+                <button class="emoji-opt-btn" data-emoji="🐱">🐱</button>
+              </div>
+              <button id="upload-photo-option-btn" class="btn btn-secondary btn-small" style="margin-top: 8px;">📷 Upload Photo</button>
+            </div>
+
+            <div id="profile-username-val" class="profile-username-label">USERNAME</div>
+          </div>
+
+          <!-- Right Side: Purple Stats Box -->
+          <div class="profile-right-col glass-purple-box">
+            <div class="stats-header">STATS 😋</div>
+            <div class="stat-row">
+              <span class="stat-name label-green">FRUITS SLICED :</span>
+              <span id="stat-fruits-sliced" class="stat-val">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-name label-red">GLASS SHOT :</span>
+              <span id="stat-glass-shot" class="stat-val">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-name label-yellow">LEADERBOARD POSITION:</span>
+              <span id="stat-lb-pos" class="stat-val">#1</span>
+            </div>
+            <div class="stat-row coin-balance-row">
+              <span class="stat-name label-gold">COINS EARNED :</span>
+              <span id="profile-coins-val" class="stat-val">0 🪙</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 24px;">
+          <button id="profile-back-btn" class="btn btn-secondary">⬅ Main Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cursors Store Modal (Canva Layout) -->
+    <div id="store-modal" class="modal-overlay hidden">
+      <div class="modal-card store-card glass-panel glow-border">
+        <h2>CURSORS</h2>
+        
+        <div class="cursors-store-grid">
+          <!-- Cyan Neon (Default) -->
+          <div class="cursor-item-card" data-cursor-id="cyan">
+            <div class="cursor-price-tag">FREE</div>
+            <div class="cursor-preview-circle cursor-cyan"></div>
+            <div class="cursor-name">CYAN</div>
+            <button class="btn-cursor-buy btn btn-secondary btn-small" data-cursor-id="cyan">EQUIP</button>
+          </div>
+
+          <!-- Blue Neon -->
+          <div class="cursor-item-card" data-cursor-id="blue">
+            <div class="cursor-price-tag">300 COINS</div>
+            <div class="cursor-preview-circle cursor-blue"></div>
+            <div class="cursor-name">BLUE</div>
+            <button class="btn-cursor-buy btn btn-primary btn-small" data-cursor-id="blue">BUY 300 🪙</button>
+          </div>
+
+          <!-- Red Neon -->
+          <div class="cursor-item-card" data-cursor-id="red">
+            <div class="cursor-price-tag">300 COINS</div>
+            <div class="cursor-preview-circle cursor-red"></div>
+            <div class="cursor-name">RED</div>
+            <button class="btn-cursor-buy btn btn-primary btn-small" data-cursor-id="red">BUY 300 🪙</button>
+          </div>
+
+          <!-- Lime Neon -->
+          <div class="cursor-item-card" data-cursor-id="lime">
+            <div class="cursor-price-tag">300 COINS</div>
+            <div class="cursor-preview-circle cursor-lime"></div>
+            <div class="cursor-name">LIME</div>
+            <button class="btn-cursor-buy btn btn-primary btn-small" data-cursor-id="lime">BUY 300 🪙</button>
+          </div>
+
+          <!-- Gold Neon -->
+          <div class="cursor-item-card" data-cursor-id="gold">
+            <div class="cursor-price-tag">300 COINS</div>
+            <div class="cursor-preview-circle cursor-gold"></div>
+            <div class="cursor-name">GOLD</div>
+            <button class="btn-cursor-buy btn btn-primary btn-small" data-cursor-id="gold">BUY 300 🪙</button>
+          </div>
+
+          <!-- Rare Chroma -->
+          <div class="cursor-item-card" data-cursor-id="chroma">
+            <div class="cursor-price-tag label-gold">600 COINS</div>
+            <div class="cursor-preview-circle cursor-chroma"></div>
+            <div class="cursor-name label-gold">RARE CHROMA</div>
+            <button class="btn-cursor-buy btn btn-primary btn-small" data-cursor-id="chroma">BUY 600 🪙</button>
+          </div>
+        </div>
+
+        <div class="store-footer-bar">
+          <button id="store-back-btn" class="btn btn-secondary">⬅ Main Menu</button>
+          <div class="store-balance-display">
+            CURRENT BALANCE : <strong id="store-coins-val" class="highlight-gold">0</strong> COINS 🪙
+          </div>
+        </div>
       </div>
     </div>
 

@@ -4,6 +4,7 @@
  */
 
 import { sounds } from './audio.js';
+import { userStore } from './userStore.js';
 
 export const PUNCH_GLASS_CONFIGS = {
   easy: {
@@ -382,6 +383,7 @@ export class PunchTheGlassManager {
     if (pane.type === 'green') {
       // Safe Green Hit -> Score!
       this.game.score++;
+      userStore.recordGlassPunch();
       this.game.ui.updateHUDScore(this.game.score);
       if (this.game.isMultiplayer && typeof this.game.onMultiplayerSlice === 'function') {
         this.game.onMultiplayerSlice(this.game.score);

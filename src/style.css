@@ -2288,6 +2288,356 @@ input:checked + .slider:before {
   padding: 16px 24px;
 }
 
+/* ==========================================================================
+   User Profile & Store UI Components
+   ========================================================================== */
+
+/* Top Right User Profile Icon Button in Main Menu */
+.menu-top-user-btn {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #00e5ff;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 15;
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.menu-top-user-btn:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.8);
+}
+
+.menu-avatar-box {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+}
+
+.menu-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Bottom Right Store Cart Button in Main Menu */
+.menu-bottom-store-btn {
+  position: absolute;
+  bottom: 18px;
+  right: 24px;
+  background: transparent;
+  border: none;
+  font-size: 2.4rem;
+  color: #ffd700;
+  cursor: pointer;
+  z-index: 15;
+  transition: transform 0.2s, filter 0.2s;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
+}
+
+.menu-bottom-store-btn:hover {
+  transform: scale(1.15) rotate(-5deg);
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+}
+
+/* User Profile Modal (Canva Layout) */
+.profile-card {
+  max-width: 680px;
+  width: 92%;
+  padding: 32px 36px;
+  background: #0f0b29;
+}
+
+.profile-layout-content {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 28px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .profile-layout-content {
+    flex-direction: column;
+  }
+}
+
+.profile-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.profile-avatar-label {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.profile-avatar-wrapper {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: #795548;
+  border: 4px solid #1a1a3a;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6), 0 8px 25px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-avatar-display {
+  font-size: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.profile-custom-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #00bcd4;
+  border: 2px solid #ffffff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s;
+}
+
+.edit-avatar-btn:hover {
+  transform: scale(1.15);
+}
+
+.profile-username-label {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #ffffff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Emoji Picker Drawer */
+.emoji-picker-drawer {
+  background: #18153d;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.emoji-picker-title {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.emoji-opt-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 1.5rem;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.emoji-opt-btn:hover {
+  transform: scale(1.2);
+  background: rgba(0, 242, 254, 0.2);
+}
+
+/* Right Side Purple Stats Box (Canva Image 2) */
+.glass-purple-box {
+  flex: 1.4;
+  background: #121038;
+  border: 2px solid #7c3aed;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.stats-header {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #00f2fe;
+  text-decoration: underline;
+  margin-bottom: 6px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.stat-name {
+  letter-spacing: 0.5px;
+}
+
+.label-green { color: #a3e635; }
+.label-red { color: #ef4444; }
+.label-yellow { color: #facc15; }
+.label-gold { color: #fbbf24; }
+
+.stat-val {
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+/* Store Modal (Canva Image 3) */
+.store-card {
+  max-width: 720px;
+  width: 94%;
+  padding: 32px 36px;
+  background: #0d0a26;
+}
+
+.cursors-store-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px 14px;
+  width: 100%;
+  margin: 24px 0 32px 0;
+}
+
+@media (max-width: 640px) {
+  .cursors-store-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cursor-item-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 10px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.cursor-item-card:hover {
+  transform: translateY(-4px);
+  border-color: #00f2fe;
+}
+
+.cursor-price-tag {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.cursor-preview-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  box-shadow: 0 0 15px currentColor;
+  margin: 4px 0;
+}
+
+.cursor-cyan { background: #00f2fe; color: #00f2fe; }
+.cursor-blue { background: #3b82f6; color: #3b82f6; }
+.cursor-red { background: #ff4757; color: #ff4757; }
+.cursor-lime { background: #2ed573; color: #2ed573; }
+.cursor-gold { background: #ffa502; color: #ffa502; }
+.cursor-chroma {
+  background: conic-gradient(#ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.8);
+  animation: spinChroma 4s linear infinite;
+}
+
+@keyframes spinChroma {
+  to { transform: rotate(360deg); }
+}
+
+.cursor-name {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+
+.btn-cursor-buy {
+  font-size: 0.75rem !important;
+  padding: 6px 12px !important;
+  width: 100%;
+}
+
+.store-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.store-balance-display {
+  font-family: 'Fredoka', 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.highlight-gold {
+  color: #fbbf24;
+  font-size: 1.3rem;
+}
+
 /* Global BGM Speaker Mute Button */
 .bgm-toggle-btn {
   position: fixed;

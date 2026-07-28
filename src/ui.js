@@ -15,6 +15,8 @@ export class UIManager {
     this.quitModal = document.getElementById('quit-modal');
     this.gameoverModal = document.getElementById('gameover-modal');
     this.cameraErrorModal = document.getElementById('camera-error-modal');
+    this.userProfileModal = document.getElementById('user-profile-modal');
+    this.storeModal = document.getElementById('store-modal');
 
     // HUD Elements
     this.hudLayer = document.getElementById('hud-layer');
@@ -196,6 +198,22 @@ export class UIManager {
     if (this.quitModal) this.quitModal.classList.add('hidden');
     this.gameoverModal.classList.add('hidden');
     this.cameraErrorModal.classList.add('hidden');
+    if (this.userProfileModal) this.userProfileModal.classList.add('hidden');
+    if (this.storeModal) this.storeModal.classList.add('hidden');
+  }
+
+  showUserProfile() {
+    this.hideAllModals();
+    if (this.userProfileModal) {
+      this.userProfileModal.classList.remove('hidden');
+    }
+  }
+
+  showStore() {
+    this.hideAllModals();
+    if (this.storeModal) {
+      this.storeModal.classList.remove('hidden');
+    }
   }
 
   setHUDVisible(visible) {

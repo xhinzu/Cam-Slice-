@@ -6,6 +6,7 @@
 import { Fruit, SlicedHalf, Particle } from './fruit.js';
 import { PunchTheGlassManager } from './punchGlass.js';
 import { sounds } from './audio.js';
+import { userStore } from './userStore.js';
 
 export const DIFFICULTY_CONFIGS = {
   easy: {
@@ -193,8 +194,8 @@ export class GameManager {
       this.updateAndDrawEntities(activeBladeSegments, config);
     }
 
-    // 3. Draw Glowing Blade Trails
-    this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments);
+    // 3. Draw Glowing Blade Trails with Equipped Cursor Style
+    this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments, userStore.getEquippedCursor());
 
     if (this.shakeDuration > 0) {
       this.ctx.restore();
@@ -319,6 +320,7 @@ export class GameManager {
     sounds.playSplat();
 
     this.score++;
+    userStore.recordFruitSlice();
     this.ui.updateHUDScore(this.score);
     if (this.isMultiplayer && this.onMultiplayerSlice) {
       this.onMultiplayerSlice(this.score);
