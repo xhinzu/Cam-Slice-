@@ -239,3 +239,131 @@ class SoundEffects {
 }
 
 export const sounds = new SoundEffects();
+
+/**
+ * Dedicated Background Music Manager (Decoupled HTML5 Audio + Web Audio Synth Fallback)
+ */
+class BGMManager {
+  constructor() {
+    this.audio = null;
+    this.isMuted = localStorage.getItem('fruit_slice_bgm_muted') === 'true';
+    this.isPlaying = false;
+    this.volume = 0.35;
+    this.synthInterval = null;
+  }
+
+  init() {
+    if (this.audio) return;
+    try {
+      this.audio = new Audio();
+      this.audio.src = './assets/audio/bgm.mp3';
+      this.audio.loop = true;
+      this.audio.volume = this.volume;
+      this.audio.muted = this.isMuted;
+    } catch (e) {}
+  }
+
+  play() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.audio) return;
+
+    try {
+      const playPromise = this.audio.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise
+          .then(() => {
+            this.isPlaying = true;
+            this.stopSynthFallback();
+          })
+          .catch(() => {
+            // Audio file missing or autoplay blocked -> fallback to Web Audio Synth
+            this.startSynthFallback();
+          });
+      }
+    } catch (e) {
+      this.startSynthFallback();
+    }
+  }
+
+  pause() {
+    if (this.audio) {
+      try { this.audio.pause(); } catch (e) {}
+    }
+    this.stopSynthFallback();
+    this.isPlaying = false;
+  }
+
+  stop() {
+    this.pause();
+    if (this.audio) {
+      try { this.audio.currentTime = 0; } catch (e) {}
+    }
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    localStorage.setItem('fruit_slice_bgm_muted', this.isMuted);
+    if (this.audio) {
+      this.audio.muted = this.isMuted;
+    }
+    if (this.isMuted) {
+      this.pause();
+    } else {
+      this.play();
+    }
+    return this.isMuted;
+  }
+
+  startSynthFallback() {
+    if (this.synthInterval || this.isMuted) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+      let idx = 0;
+
+      this.synthInterval = setInterval(() => {
+        if (this.isMuted) return;
+        try {
+          if (ctx.state === 'suspended') ctx.resume();
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(notes[idx % notes.length], now);
+
+          gain.gain.setValueAtTime(0.04 * this.volume, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.22);
+          idx++;
+        } catch (e) {}
+      }, 300);
+    } catch (e) {}
+  }
+
+  stopSynthFallback() {
+    if (this.synthInterval) {
+      clearInterval(this.synthInterval);
+      this.synthInterval = null;
+    }
+  }
+}
+
+export const bgm = new BGMManager();
+
+// Tab Focus Auto-Pause
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    bgm.pause();
+  } else if (!bgm.isMuted) {
+    bgm.play();
+  }
+});

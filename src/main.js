@@ -9,6 +9,7 @@ import { UIManager } from './ui.js';
 import { leaderboard } from './leaderboard.js';
 import { GameManager } from './game.js';
 import { MultiplayerManager } from './multiplayer.js';
+import { bgm } from './audio.js';
 
 class AppController {
   constructor() {
@@ -70,9 +71,27 @@ class AppController {
   }
 
   bindEvents() {
+    // BGM Speaker Mute Button Listener
+    const bgmToggleBtn = document.getElementById('bgm-toggle-btn');
+    const bgmIcon = document.getElementById('bgm-icon');
+    if (bgmToggleBtn) {
+      const updateBGMUI = (isMuted) => {
+        if (bgmIcon) bgmIcon.textContent = isMuted ? '🔇' : '🔊';
+        bgmToggleBtn.classList.toggle('muted', isMuted);
+      };
+      updateBGMUI(bgm.isMuted);
+
+      bgmToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const muted = bgm.toggleMute();
+        updateBGMUI(muted);
+      });
+    }
+
     // Name Entry Form submit -> proceed to Tutorial
     this.ui.nameForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      bgm.play();
       const inputVal = this.ui.nameInput.value.trim();
       if (inputVal) {
         this.ui.setPlayerName(inputVal);
@@ -87,6 +106,7 @@ class AppController {
     // "I Understand" Button on Tutorial Modal -> Go to Main Menu
     if (this.ui.understandBtn) {
       this.ui.understandBtn.addEventListener('click', () => {
+        bgm.play();
         this.ui.showMainMenu(this.selectedLevel);
       });
     }
@@ -94,6 +114,7 @@ class AppController {
     // MAIN MENU BUTTONS
     if (this.ui.menuPlayBtn) {
       this.ui.menuPlayBtn.addEventListener('click', () => {
+        bgm.play();
         this.ui.hideAllModals();
         this.ui.setModeActive(this.selectedMode);
         this.game.startNewGame(this.selectedLevel, this.selectedMode);
@@ -102,6 +123,7 @@ class AppController {
 
     if (this.ui.menuMPBtn) {
       this.ui.menuMPBtn.addEventListener('click', () => {
+        bgm.play();
         this.ui.hideAllModals();
         this.multiplayer.mpUI.showSubmenu();
       });
