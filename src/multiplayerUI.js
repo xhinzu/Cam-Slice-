@@ -237,6 +237,11 @@ export class MultiplayerUIManager {
             </div>
           `;
           this.mpSidebarContent.appendChild(tile);
+
+          // Re-attach cached video stream if already received
+          if (this.cachedStreams && this.cachedStreams.has(p.id)) {
+            this.attachRemoteVideoStream(p.id, this.cachedStreams.get(p.id));
+          }
         } else {
           // Update score badge
           const scoreEl = document.getElementById(`pov-score-${p.id}`);
@@ -256,10 +261,27 @@ export class MultiplayerUIManager {
   }
 
   attachRemoteVideoStream(peerId, stream) {
+    if (!peerId || !stream) return;
+
+    if (!this.cachedStreams) this.cachedStreams = new Map();
+    this.cachedStreams.set(peerId, stream);
+
     const videoEl = document.getElementById(`remote-video-${peerId}`);
     const noCamEl = document.getElementById(`no-cam-${peerId}`);
+
     if (videoEl) {
       videoEl.srcObject = stream;
+      videoEl.autoplay = true;
+      videoEl.playsInline = true;
+      videoEl.muted = true;
+      
+      const playPromise = videoEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn(`Remote video play notice for peer ${peerId}:`, err);
+        });
+      }
+
       if (noCamEl) noCamEl.classList.add('hidden');
     }
   }

@@ -430,6 +430,16 @@ export class MultiplayerManager {
     });
   }
 
+  getLocalCameraStream() {
+    if (this.game?.camera?.stream && this.game.camera.stream.active) {
+      return this.game.camera.stream;
+    }
+    if (this.game?.camera?.video?.srcObject) {
+      return this.game.camera.video.srcObject;
+    }
+    return null;
+  }
+
   initPeerJS(customPeerId = null) {
     try {
       const peerOptions = {
@@ -449,11 +459,31 @@ export class MultiplayerManager {
 
       this.peer = customPeerId ? new Peer(customPeerId, peerOptions) : new Peer(peerOptions);
 
-      this.peer.on('call', (call) => {
-        let localStream = null;
-        if (this.game.camera && this.game.camera.video && this.game.camera.video.srcObject) {
-          localStream = this.game.camera.video.srcObject;
+      this.peer.on('open', (assignedPeerId) => {
+        const oldId = this.myId;
+        this.myId = assignedPeerId;
+
+        if (this.roomState && this.roomState.players) {
+          const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
+          const me = this.roomState.players.find(p => p.id === oldId || (this.isHost ? p.isHost : !p.isHost && p.name === playerName));
+          if (me) {
+            me.id = assignedPeerId;
+            this.pushRoomStateToServer({ action: 'update', player: me });
+          }
         }
+
+        // Auto call existing peers if seeOthers is active
+        if (this.roomState && this.roomState.seeOthers && this.roomState.matchState === 'playing') {
+          this.roomState.players.forEach(p => {
+            if (p.id !== assignedPeerId && p.id !== 'connecting') {
+              this.callPeerVideo(p.id);
+            }
+          });
+        }
+      });
+
+      this.peer.on('call', (call) => {
+        const localStream = this.getLocalCameraStream();
         call.answer(localStream);
         call.on('stream', (remoteStream) => {
           this.mpUI.attachRemoteVideoStream(call.peer, remoteStream);
@@ -465,6 +495,23 @@ export class MultiplayerManager {
       });
     } catch (e) {
       console.warn('PeerJS init notice:', e);
+    }
+  }
+
+  callPeerVideo(targetPeerId) {
+    if (!this.peer || !targetPeerId || targetPeerId === this.myId || targetPeerId === 'connecting' || this.mediaCalls.has(targetPeerId)) return;
+    const localStream = this.getLocalCameraStream();
+
+    try {
+      const call = this.peer.call(targetPeerId, localStream);
+      if (call) {
+        this.mediaCalls.set(targetPeerId, call);
+        call.on('stream', (remoteStream) => {
+          this.mpUI.attachRemoteVideoStream(targetPeerId, remoteStream);
+        });
+      }
+    } catch (e) {
+      console.warn('Call peer video error:', e);
     }
   }
 
