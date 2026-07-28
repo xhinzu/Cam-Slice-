@@ -678,8 +678,8 @@ export class MultiplayerManager {
         });
       }
 
-      // Update PC Sidebar POV overlay and live score badges in real-time
-      this.mpUI.renderSidebarPOV(players, this.myId, seeOthers, this.isPC);
+      // Update Live Sidebar POV overlay and live score badges in real-time
+      this.mpUI.renderSidebarPOV(players, this.myId, seeOthers);
 
     } else if (matchState === 'ended') {
       if (this.activeMatchState !== 'ended') {

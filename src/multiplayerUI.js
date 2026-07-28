@@ -66,6 +66,20 @@ export class MultiplayerUIManager {
     this.mpTimerHUD = document.getElementById('mp-timer-hud');
     this.mpTimerValue = document.getElementById('mp-timer-value');
 
+    this.toggleMPCamBtn = document.getElementById('toggle-mp-cam-btn');
+    if (this.toggleMPCamBtn) {
+      this.toggleMPCamBtn.addEventListener('click', () => {
+        if (this.mpSidebarPOV) {
+          const isCollapsed = this.mpSidebarPOV.classList.toggle('collapsed');
+          const iconEl = this.toggleMPCamBtn.querySelector('.cam-btn-icon');
+          const textEl = this.toggleMPCamBtn.querySelector('.cam-btn-text');
+          if (iconEl) iconEl.textContent = isCollapsed ? '🙈' : '👁️';
+          if (textEl) textEl.textContent = isCollapsed ? 'Show Camera' : 'Hide Camera';
+          this.toggleMPCamBtn.title = isCollapsed ? 'Show Live Camera' : 'Hide Live Camera';
+        }
+      });
+    }
+
     // Results Modal Elements
     this.mpResultsList = document.getElementById('mp-results-list');
     this.mpPlayAgainBtn = document.getElementById('mp-play-again-btn');
@@ -207,12 +221,7 @@ export class MultiplayerUIManager {
   /**
    * Render or update PC POV Sidebar overlay during match.
    */
-  renderSidebarPOV(players, currentUserId, seeOthers, isPC) {
-    if (!isPC) {
-      this.hideSidebarPOV();
-      return;
-    }
-
+  renderSidebarPOV(players, currentUserId, seeOthers) {
     if (!this.mpSidebarPOV || !players) return;
 
     this.mpSidebarPOV.classList.remove('hidden');
