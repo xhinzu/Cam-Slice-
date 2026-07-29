@@ -6,6 +6,7 @@
 import { Peer } from 'peerjs';
 import { WebRTCManager } from './webrtc.js';
 import { MultiplayerUIManager } from './multiplayerUI.js';
+import { VoiceChatManager } from './voiceChat.js';
 
 export class MultiplayerManager {
   constructor(gameManager, uiManager) {
@@ -26,6 +27,15 @@ export class MultiplayerManager {
     this.syncPollerInterval = null;
 
     this.isPC = WebRTCManager.isSupportedOnDevice();
+
+    this.voiceEnabled = true;
+    this.voiceChat = new VoiceChatManager({
+      onSpeakingChange: (isSpeaking) => this.onLocalSpeakingChanged(isSpeaking),
+      onMicStateChange: (isMuted) => {
+        this.mpUI.updateMicUI(isMuted, this.voiceEnabled);
+        this.onLocalMicStateChanged(isMuted);
+      }
+    });
 
     this.initEvents();
   }
@@ -168,8 +178,46 @@ export class MultiplayerManager {
       });
     }
 
+    // Mic Mute Buttons (Lobby & HUD Overlay)
+    if (this.mpUI.mpLobbyMicBtn) {
+      this.mpUI.mpLobbyMicBtn.addEventListener('click', () => {
+        if (this.voiceChat) this.voiceChat.toggleMute();
+      });
+    }
+    if (this.mpUI.hudMicBtn) {
+      this.mpUI.hudMicBtn.addEventListener('click', () => {
+        if (this.voiceChat) this.voiceChat.toggleMute();
+      });
+    }
+
     // Check URL parameters for direct invite join on app boot
     this.checkURLJoin();
+  }
+
+  onLocalSpeakingChanged(isSpeaking) {
+    if (!this.roomState || !this.myId) return;
+    const me = this.roomState.players?.find(p => p.id === this.myId);
+    if (me && me.isSpeaking !== isSpeaking) {
+      me.isSpeaking = isSpeaking;
+      this.mpUI.renderLobbyPlayers(this.roomState, this.myId);
+      this.pushRoomStateToServer({
+        action: 'update-voice',
+        player: { id: this.myId, isSpeaking, isMuted: Boolean(me.isMuted) }
+      });
+    }
+  }
+
+  onLocalMicStateChanged(isMuted) {
+    if (!this.roomState || !this.myId) return;
+    const me = this.roomState.players?.find(p => p.id === this.myId);
+    if (me) {
+      me.isMuted = isMuted;
+      this.mpUI.renderLobbyPlayers(this.roomState, this.myId);
+      this.pushRoomStateToServer({
+        action: 'update-voice',
+        player: { id: this.myId, isMuted, isSpeaking: Boolean(me.isSpeaking) }
+      });
+    }
   }
 
   copyTextToClipboard(text, btnEl, successLabel, defaultHTML) {
@@ -266,12 +314,22 @@ export class MultiplayerManager {
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
     this.myId = 'host-' + Math.random().toString(36).substring(2, 7);
 
+    const voiceChatEnabled = this.mpUI.mpVoiceToggle ? this.mpUI.mpVoiceToggle.checked : true;
+    this.voiceEnabled = voiceChatEnabled;
+
+    if (voiceChatEnabled && this.voiceChat) {
+      await this.voiceChat.startMicrophone();
+    }
+
     const initialHostPlayer = {
       id: this.myId,
       name: playerName,
       isHost: true,
       ready: true,
-      score: 0
+      score: 0,
+      voiceEnabled: voiceChatEnabled,
+      isMuted: Boolean(this.voiceChat?.isMuted),
+      isSpeaking: false
     };
 
     this.roomState = {
@@ -280,6 +338,7 @@ export class MultiplayerManager {
       difficulty,
       mode: mode || 'fruit-slice',
       seeOthers: true,
+      voiceChat: voiceChatEnabled,
       hostId: this.myId,
       matchState: 'lobby',
       matchEndsAt: null,
@@ -287,6 +346,7 @@ export class MultiplayerManager {
     };
 
     this.mpUI.showLobby();
+    this.mpUI.updateMicUI(this.voiceChat?.isMuted, voiceChatEnabled);
     this.mpUI.renderLobbyState(this.roomState, this.myId, this.isHost);
 
     // 1. Post to Vercel KV Room State API for global cross-network discovery & sync
@@ -301,6 +361,7 @@ export class MultiplayerManager {
         code: this.currentRoomCode,
         hostName: playerName,
         difficulty,
+        voiceChat: voiceChatEnabled,
         playerCount: 1,
         timestamp: Date.now()
       };
@@ -327,12 +388,20 @@ export class MultiplayerManager {
     const playerName = this.appUI.getPlayerName() || 'Ninja Slicer';
     this.myId = 'guest-' + Math.random().toString(36).substring(2, 7);
 
+    this.voiceEnabled = true;
+    if (this.voiceChat) {
+      await this.voiceChat.startMicrophone();
+    }
+
     const guestPlayer = {
       id: this.myId,
       name: playerName,
       isHost: false,
       ready: true,
-      score: 0
+      score: 0,
+      voiceEnabled: true,
+      isMuted: Boolean(this.voiceChat?.isMuted),
+      isSpeaking: false
     };
 
     this.roomState = {
@@ -340,6 +409,7 @@ export class MultiplayerManager {
       isPublic: true,
       difficulty: 'medium',
       seeOthers: true,
+      voiceChat: true,
       hostId: '',
       matchState: 'lobby',
       matchEndsAt: null,
@@ -347,6 +417,7 @@ export class MultiplayerManager {
     };
 
     this.mpUI.showLobby();
+    this.mpUI.updateMicUI(this.voiceChat?.isMuted, true);
     this.mpUI.renderLobbyState(this.roomState, this.myId, this.isHost);
 
     // 1. Join room state on Vercel KV
@@ -523,6 +594,21 @@ export class MultiplayerManager {
     return null;
   }
 
+  getLocalCombinedStream() {
+    const camStream = this.getLocalCameraStream();
+    const audioTrack = this.voiceChat ? this.voiceChat.getAudioTrack() : null;
+
+    const tracks = [];
+    if (camStream) {
+      camStream.getVideoTracks().forEach((t) => tracks.push(t));
+    }
+    if (audioTrack) {
+      tracks.push(audioTrack);
+    }
+
+    return tracks.length > 0 ? new MediaStream(tracks) : null;
+  }
+
   initPeerJS(customPeerId = null) {
     try {
       const peerOptions = {
@@ -585,10 +671,13 @@ export class MultiplayerManager {
       });
 
       this.peer.on('call', (call) => {
-        const localStream = this.getLocalCameraStream();
+        const localStream = this.getLocalCombinedStream();
         call.answer(localStream);
         call.on('stream', (remoteStream) => {
           this.mpUI.attachRemoteVideoStream(call.peer, remoteStream);
+          if (this.voiceChat) {
+            this.voiceChat.attachRemoteAudioStream(call.peer, remoteStream);
+          }
         });
       });
 
@@ -611,7 +700,7 @@ export class MultiplayerManager {
       this.mediaCalls.delete(targetPeerId);
     }
 
-    const localStream = this.getLocalCameraStream();
+    const localStream = this.getLocalCombinedStream();
 
     try {
       const call = this.peer.call(targetPeerId, localStream);
@@ -619,12 +708,21 @@ export class MultiplayerManager {
         this.mediaCalls.set(targetPeerId, call);
         call.on('stream', (remoteStream) => {
           this.mpUI.attachRemoteVideoStream(targetPeerId, remoteStream);
+          if (this.voiceChat) {
+            this.voiceChat.attachRemoteAudioStream(targetPeerId, remoteStream);
+          }
         });
         call.on('close', () => {
           this.mediaCalls.delete(targetPeerId);
+          if (this.voiceChat) {
+            this.voiceChat.removeRemoteAudio(targetPeerId);
+          }
         });
         call.on('error', () => {
           this.mediaCalls.delete(targetPeerId);
+          if (this.voiceChat) {
+            this.voiceChat.removeRemoteAudio(targetPeerId);
+          }
         });
       }
     } catch (e) {
@@ -731,6 +829,10 @@ export class MultiplayerManager {
     this.stopMatchTimer();
     this.stopStateSyncPoller();
     this.stopCamFrameRelay();
+
+    if (this.voiceChat) {
+      this.voiceChat.stopMicrophone();
+    }
 
     if (this.currentRoomCode && this.myId) {
       this.pushRoomStateToServer({

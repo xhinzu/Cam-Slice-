@@ -68,6 +68,7 @@
       <div id="mp-timer-hud" class="mp-timer-hud glass-panel hidden">
         <span class="timer-icon">⏱️</span>
         <span id="mp-timer-value" class="timer-value">1:00</span>
+        <button id="hud-mic-btn" class="hud-mic-btn" title="Toggle Microphone Mute">🎙️</button>
       </div>
 
       <!-- Top Right: Lives, Level Badge, and Exit Menu Button -->
@@ -604,6 +605,19 @@
               </div>
             </div>
 
+            <!-- Voice Chat Section -->
+            <div class="canva-section">
+              <div class="canva-section-label">VOICE CHAT</div>
+              <div class="canva-visibility-group">
+                <span class="canva-toggle-label">OFF</span>
+                <label class="switch canva-switch">
+                  <input type="checkbox" id="mp-voice-toggle" checked>
+                  <span class="slider round"></span>
+                </label>
+                <span class="canva-toggle-label">🎙️ OPEN MIC</span>
+              </div>
+            </div>
+
             <!-- Action Buttons Section -->
             <div class="canva-actions-group">
               <button id="mp-confirm-create-btn" class="canva-action-btn canva-btn-confirm">
@@ -664,6 +678,7 @@
             <strong id="mp-lobby-code" class="code-tag">ABC123</strong>
             <button id="mp-copy-code-btn" class="btn btn-sm btn-secondary">📋 Copy Code</button>
             <button id="mp-copy-link-btn" class="btn btn-sm btn-secondary">🔗 Copy Share Link</button>
+            <button id="mp-lobby-mic-btn" class="btn btn-sm btn-voice-active" title="Toggle Microphone Mute">🎙️ Open Mic</button>
           </div>
           <div class="lobby-badges">
             <span id="mp-lobby-badge" class="room-badge public">🌐 PUBLIC ROOM</span>

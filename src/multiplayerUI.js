@@ -22,6 +22,7 @@ export class MultiplayerUIManager {
 
     // Create Room Elements
     this.mpRoomVisibilityToggle = document.getElementById('mp-visibility-toggle');
+    this.mpVoiceToggle = document.getElementById('mp-voice-toggle');
     this.mpCreateDiffBtns = document.querySelectorAll('.mp-diff-btn');
     this.mpConfirmCreateBtn = document.getElementById('mp-confirm-create-btn');
     this.mpCreateBackBtn = document.getElementById('mp-create-back-btn');
@@ -50,6 +51,7 @@ export class MultiplayerUIManager {
     this.mpLobbyCodeEl = document.getElementById('mp-lobby-code');
     this.mpCopyCodeBtn = document.getElementById('mp-copy-code-btn');
     this.mpCopyLinkBtn = document.getElementById('mp-copy-link-btn');
+    this.mpLobbyMicBtn = document.getElementById('mp-lobby-mic-btn');
     this.mpLobbyBadgeEl = document.getElementById('mp-lobby-badge');
     this.mpLobbyDiffEl = document.getElementById('mp-lobby-diff');
     this.mpLobbyPlayerList = document.getElementById('mp-lobby-player-list');
@@ -65,6 +67,7 @@ export class MultiplayerUIManager {
     this.mpSidebarContent = document.getElementById('mp-sidebar-content');
     this.mpTimerHUD = document.getElementById('mp-timer-hud');
     this.mpTimerValue = document.getElementById('mp-timer-value');
+    this.hudMicBtn = document.getElementById('hud-mic-btn');
 
     this.toggleMPCamBtn = document.getElementById('toggle-mp-cam-btn');
     if (this.toggleMPCamBtn) {
@@ -124,10 +127,72 @@ export class MultiplayerUIManager {
     if (this.mpResultsModal) this.mpResultsModal.classList.add('hidden');
   }
 
+  updateMicUI(isMuted, voiceEnabled = true) {
+    if (this.mpLobbyMicBtn) {
+      if (!voiceEnabled) {
+        this.mpLobbyMicBtn.classList.add('hidden');
+      } else {
+        this.mpLobbyMicBtn.classList.remove('hidden');
+        if (isMuted) {
+          this.mpLobbyMicBtn.className = 'btn btn-sm btn-voice-muted';
+          this.mpLobbyMicBtn.innerHTML = '🔇 Mic Muted';
+        } else {
+          this.mpLobbyMicBtn.className = 'btn btn-sm btn-voice-active';
+          this.mpLobbyMicBtn.innerHTML = '🎙️ Open Mic';
+        }
+      }
+    }
+
+    if (this.hudMicBtn) {
+      if (!voiceEnabled) {
+        this.hudMicBtn.classList.add('hidden');
+      } else {
+        this.hudMicBtn.classList.remove('hidden');
+        if (isMuted) {
+          this.hudMicBtn.classList.add('muted');
+          this.hudMicBtn.innerHTML = '🔇';
+          this.hudMicBtn.title = 'Mic Muted (Click to Unmute)';
+        } else {
+          this.hudMicBtn.classList.remove('muted');
+          this.hudMicBtn.innerHTML = '🎙️';
+          this.hudMicBtn.title = 'Open Mic Active (Click to Mute)';
+        }
+      }
+    }
+  }
+
+  renderLobbyPlayers(state, currentUserId) {
+    if (!this.mpLobbyPlayerList || !state.players) return;
+    this.mpLobbyPlayerList.innerHTML = state.players.map((p) => {
+      const isMe = p.id === currentUserId;
+      let voiceBadge = '';
+      if (p.isMuted) {
+        voiceBadge = '<span class="tag muted-tag">🔇 Muted</span>';
+      } else if (p.isSpeaking) {
+        voiceBadge = '<span class="tag speaking-tag pulse-ring">🔊 Speaking</span>';
+      } else if (p.voiceEnabled !== false) {
+        voiceBadge = '<span class="tag voice-tag">🎙️ Mic On</span>';
+      }
+
+      return `
+        <div class="lobby-player-card ${isMe ? 'is-me' : ''}">
+          <div class="player-avatar">🥷</div>
+          <div class="player-info">
+            <div class="player-name">${this.escapeHTML(p.name)} ${isMe ? '(You)' : ''}</div>
+            <div class="player-tags">
+              ${p.isHost ? '<span class="tag host-tag">👑 HOST</span>' : ''}
+              ${p.ready ? '<span class="tag ready-tag">READY ✓</span>' : '<span class="tag waiting-tag">WAITING...</span>'}
+              ${voiceBadge}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   renderLobbyState(state, currentUserId, isHostFlag = false) {
     if (!state) return;
 
-    // Room Code & Badges
     if (this.mpLobbyCodeEl) this.mpLobbyCodeEl.textContent = state.roomCode;
     if (this.mpLobbyBadgeEl) {
       this.mpLobbyBadgeEl.textContent = state.isPublic ? '🌐 PUBLIC ROOM' : '🔒 PRIVATE ROOM';
@@ -135,13 +200,13 @@ export class MultiplayerUIManager {
     }
     if (this.mpLobbyDiffEl) {
       const modeTag = state.mode === 'punch-glass' ? '🥊 PUNCH GLASS' : '🍉 FRUIT SLICE';
-      this.mpLobbyDiffEl.textContent = `${modeTag} • ${state.difficulty.toUpperCase()}`;
+      const voiceTag = state.voiceChat ? ' • 🎙️ OPEN MIC' : '';
+      this.mpLobbyDiffEl.textContent = `${modeTag} • ${state.difficulty.toUpperCase()}${voiceTag}`;
     }
 
     const meInState = state.players ? state.players.find((p) => p.id === currentUserId) : null;
     const isHost = Boolean(isHostFlag || state.hostId === currentUserId || meInState?.isHost);
 
-    // Host vs Non-Host Controls
     if (isHost) {
       this.mpHostControls.classList.remove('hidden');
       if (this.mpToggleReadyBtn) this.mpToggleReadyBtn.classList.add('hidden');
@@ -160,24 +225,7 @@ export class MultiplayerUIManager {
       if (this.mpToggleReadyBtn) this.mpToggleReadyBtn.classList.remove('hidden');
     }
 
-    // Player List
-    if (this.mpLobbyPlayerList && state.players) {
-      this.mpLobbyPlayerList.innerHTML = state.players.map((p) => {
-        const isMe = p.id === currentUserId;
-        return `
-          <div class="lobby-player-card ${isMe ? 'is-me' : ''}">
-            <div class="player-avatar">🥷</div>
-            <div class="player-info">
-              <div class="player-name">${this.escapeHTML(p.name)} ${isMe ? '(You)' : ''}</div>
-              <div class="player-tags">
-                ${p.isHost ? '<span class="tag host-tag">👑 HOST</span>' : ''}
-                ${p.ready ? '<span class="tag ready-tag">READY ✓</span>' : '<span class="tag waiting-tag">WAITING...</span>'}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+    this.renderLobbyPlayers(state, currentUserId);
   }
 
   renderPublicRooms(roomsList, onJoinClick) {
@@ -197,7 +245,7 @@ export class MultiplayerUIManager {
       <div class="public-room-item glass-panel">
         <div class="room-item-info">
           <div class="room-item-title">Room ${this.escapeHTML(room.code)}</div>
-          <div class="room-item-sub">Host: ${this.escapeHTML(room.hostName)} | ${room.difficulty.toUpperCase()}</div>
+          <div class="room-item-sub">Host: ${this.escapeHTML(room.hostName)} | ${room.difficulty.toUpperCase()} ${room.voiceChat ? '🎙️' : ''}</div>
         </div>
         <div class="room-item-right">
           <span class="player-count-badge">${room.playerCount}/4 Players</span>
@@ -235,7 +283,7 @@ export class MultiplayerUIManager {
         <div class="sidebar-header">👥 Live Match Scores</div>
         ${otherPlayers.map((p) => `
           <div class="sidebar-player-row glass-panel">
-            <span class="player-name">${this.escapeHTML(p.name)}</span>
+            <span class="player-name">${this.escapeHTML(p.name)} ${p.isSpeaking ? '🔊' : (p.isMuted ? '🔇' : '')}</span>
             <span class="player-score">${p.score} 🍉</span>
           </div>
         `).join('')}
@@ -245,10 +293,13 @@ export class MultiplayerUIManager {
       this.mpSidebarContent.className = 'sidebar-video-grid';
       otherPlayers.forEach((p) => {
         let tile = document.getElementById(`pov-tile-${p.id}`);
+        const isSpeaking = Boolean(p.isSpeaking);
+        const isMuted = Boolean(p.isMuted);
+
         if (!tile) {
           tile = document.createElement('div');
           tile.id = `pov-tile-${p.id}`;
-          tile.className = 'pov-video-tile glass-panel';
+          tile.className = `pov-video-tile glass-panel ${isSpeaking ? 'is-speaking' : ''}`;
           tile.innerHTML = `
             <div class="pov-video-wrapper">
               <video id="remote-video-${p.id}" autoplay playsinline muted></video>
@@ -256,6 +307,9 @@ export class MultiplayerUIManager {
                 <span style="font-size: 1.8rem; margin-bottom: 2px;">🥷</span>
                 <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">Live Camera Feed</span>
               </div>
+              <span id="voice-indicator-${p.id}" class="pov-voice-badge ${isSpeaking ? 'speaking' : (isMuted ? 'muted' : 'active')}">
+                ${isSpeaking ? '🔊 Speaking' : (isMuted ? '🔇 Muted' : '🎙️ Mic On')}
+              </span>
             </div>
             <div class="pov-tile-footer">
               <span class="pov-player-name">${this.escapeHTML(p.name)}</span>
@@ -269,9 +323,16 @@ export class MultiplayerUIManager {
             this.attachRemoteVideoStream(p.id, this.cachedStreams.get(p.id));
           }
         } else {
-          // Update score badge
+          // Update score badge and voice indicator
           const scoreEl = document.getElementById(`pov-score-${p.id}`);
           if (scoreEl) scoreEl.textContent = `${p.score} 🍉`;
+
+          tile.classList.toggle('is-speaking', isSpeaking);
+          const voiceInd = document.getElementById(`voice-indicator-${p.id}`);
+          if (voiceInd) {
+            voiceInd.className = `pov-voice-badge ${isSpeaking ? 'speaking' : (isMuted ? 'muted' : 'active')}`;
+            voiceInd.textContent = isSpeaking ? '🔊 Speaking' : (isMuted ? '🔇 Muted' : '🎙️ Mic On');
+          }
         }
       });
 
