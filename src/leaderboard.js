@@ -24,7 +24,7 @@ class LeaderboardManager {
     if (!this.activeCallback) return;
     this.currentMode = mode;
 
-    const blockedNames = ['sreedev', 'zhinsu'];
+    const blockedNames = ['sreedev', 'zhinsu', 'rigved'];
 
     try {
       const response = await fetch(`/api/leaderboard?mode=${mode}`);
@@ -51,7 +51,7 @@ class LeaderboardManager {
    */
   async submitScore(name, score, mode = 'fruit-slice') {
     const cleanName = (name || 'Anonymous').trim().substring(0, 20);
-    const blockedNames = ['sreedev', 'zhinsu'];
+    const blockedNames = ['sreedev', 'zhinsu', 'rigved'];
     if (blockedNames.includes(cleanName.toLowerCase())) return 0;
 
     const pbKey = `${this.personalBestKey}_${mode}`;
@@ -100,7 +100,7 @@ class LeaderboardManager {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           const demoNames = ['MasterNinja', 'BladeRunner', 'FruitSlayer', 'ZenSlicer', 'SamuraiJack', 'ShadowHand', 'SpeedDemon', 'SlashKing', 'ChopChop', 'RookieBlade'];
-          const blockedNames = ['sreedev', 'zhinsu'];
+          const blockedNames = ['sreedev', 'zhinsu', 'rigved'];
           list = parsed.filter(item => {
             if (!item || !item.name) return false;
             const lower = item.name.toLowerCase();
@@ -144,7 +144,7 @@ class LeaderboardManager {
   }
 
   updateLocalLeaderboard(name, score, mode = 'fruit-slice') {
-    const blockedNames = ['sreedev', 'zhinsu'];
+    const blockedNames = ['sreedev', 'zhinsu', 'rigved'];
     if (blockedNames.includes(name.toLowerCase())) return;
 
     const lb = this.getLocalLeaderboard(mode);

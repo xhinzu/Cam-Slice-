@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const blockedNames = ['sreedev', 'zhinsu'];
+    const blockedNames = ['sreedev', 'zhinsu', 'rigved'];
     const mode = req.query ? (req.query.mode || 'fruit-slice') : 'fruit-slice';
     const modeKey = mode === 'punch-glass' ? 'leaderboard:punch-glass' : 'leaderboard';
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
             continue;
           }
           if (blockedNames.includes(name.toLowerCase())) {
-            try { await kv.zrem('leaderboard', name); } catch (e) {}
+            try { await kv.zrem(modeKey, name); } catch (e) {}
             continue;
           }
           formattedList.push({ name, score });
