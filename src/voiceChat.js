@@ -20,10 +20,37 @@ export class VoiceChatManager {
     this.analyser = null;
     this.microphoneSource = null;
     this.vadInterval = null;
-    this.speakingThreshold = 18; // RMS volume threshold for speaking detection
+    this.speakingThreshold = 14; // RMS volume threshold for speaking detection
 
     // Remote peer audio elements map: peerId -> HTMLAudioElement
     this.remoteAudioElements = new Map();
+
+    this.initAudioUnlockListeners();
+  }
+
+  /**
+   * Bind user interaction events to unlock browser Web Audio API & HTML5 Audio playback.
+   */
+  initAudioUnlockListeners() {
+    const unlock = () => {
+      this.unlockAudio();
+    };
+    window.addEventListener('click', unlock, { passive: true });
+    window.addEventListener('touchstart', unlock, { passive: true });
+    window.addEventListener('keydown', unlock, { passive: true });
+  }
+
+  unlockAudio() {
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(() => {});
+    }
+    this.remoteAudioElements.forEach((audioEl) => {
+      if (audioEl && audioEl.paused) {
+        audioEl.muted = false;
+        audioEl.volume = 1.0;
+        audioEl.play().catch(() => {});
+      }
+    });
   }
 
   /**
@@ -73,6 +100,10 @@ export class VoiceChatManager {
       if (!AudioCtxClass) return;
 
       this.audioCtx = new AudioCtxClass();
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+
       this.microphoneSource = this.audioCtx.createMediaStreamSource(this.audioStream);
       this.analyser = this.audioCtx.createAnalyser();
       this.analyser.fftSize = 512;
@@ -160,31 +191,29 @@ export class VoiceChatManager {
     if (audioTracks.length === 0) return;
 
     let audioEl = this.remoteAudioElements.get(peerId);
+    const container = document.getElementById('remote-audio-container') || document.body;
 
     if (!audioEl) {
       audioEl = document.createElement('audio');
       audioEl.id = `remote-audio-${peerId}`;
       audioEl.autoplay = true;
       audioEl.playsInline = true;
+      audioEl.muted = false;
+      audioEl.volume = 1.0;
       audioEl.style.display = 'none';
-      document.body.appendChild(audioEl);
+      container.appendChild(audioEl);
       this.remoteAudioElements.set(peerId, audioEl);
     }
 
     const audioStream = new MediaStream(audioTracks);
     audioEl.srcObject = audioStream;
+    audioEl.muted = false;
+    audioEl.volume = 1.0;
 
     const playPromise = audioEl.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn(`Autoplay restriction for peer ${peerId} audio, retrying on user click:`, err);
-        const resumeOnUserGesture = () => {
-          audioEl.play().catch(() => {});
-          document.removeEventListener('click', resumeOnUserGesture);
-          document.removeEventListener('keydown', resumeOnUserGesture);
-        };
-        document.addEventListener('click', resumeOnUserGesture);
-        document.addEventListener('keydown', resumeOnUserGesture);
+        console.warn(`Autoplay restriction for peer ${peerId} audio, will resume on user gesture:`, err);
       });
     }
   }

@@ -302,7 +302,7 @@ export class MultiplayerUIManager {
           tile.className = `pov-video-tile glass-panel ${isSpeaking ? 'is-speaking' : ''}`;
           tile.innerHTML = `
             <div class="pov-video-wrapper">
-              <video id="remote-video-${p.id}" autoplay playsinline muted></video>
+              <video id="remote-video-${p.id}" autoplay playsinline></video>
               <div id="no-cam-${p.id}" class="no-cam-overlay">
                 <span style="font-size: 1.8rem; margin-bottom: 2px;">🥷</span>
                 <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">Live Camera Feed</span>
@@ -366,7 +366,8 @@ export class MultiplayerUIManager {
       videoEl.srcObject = stream;
       videoEl.autoplay = true;
       videoEl.playsInline = true;
-      videoEl.muted = true;
+      videoEl.muted = false;
+      videoEl.volume = 1.0;
       
       const hideOverlay = () => {
         if (noCamEl) {

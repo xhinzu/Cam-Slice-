@@ -194,6 +194,25 @@ export class MultiplayerManager {
     this.checkURLJoin();
   }
 
+  updatePeerAudioTracks() {
+    const audioTrack = this.voiceChat ? this.voiceChat.getAudioTrack() : null;
+    if (!audioTrack) return;
+
+    for (const [peerId, call] of this.mediaCalls) {
+      if (call && call.peerConnection) {
+        try {
+          const senders = call.peerConnection.getSenders();
+          const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+          if (audioSender) {
+            audioSender.replaceTrack(audioTrack).catch(() => {});
+          } else {
+            call.peerConnection.addTrack(audioTrack, new MediaStream([audioTrack]));
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
   onLocalSpeakingChanged(isSpeaking) {
     if (!this.roomState || !this.myId) return;
     const me = this.roomState.players?.find(p => p.id === this.myId);
@@ -208,6 +227,9 @@ export class MultiplayerManager {
   }
 
   onLocalMicStateChanged(isMuted) {
+    if (this.voiceChat) {
+      this.updatePeerAudioTracks();
+    }
     if (!this.roomState || !this.myId) return;
     const me = this.roomState.players?.find(p => p.id === this.myId);
     if (me) {
