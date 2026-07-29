@@ -61,7 +61,8 @@ export class Fruit {
     this.rotation += this.vRot;
 
     // Offscreen bottom check
-    if (this.y - this.radius > 1000) {
+    const bottomBound = (typeof window !== 'undefined' ? window.innerHeight : 1000) + 80;
+    if (this.y - this.radius > bottomBound) {
       this.markedForDeletion = true;
     }
   }
