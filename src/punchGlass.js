@@ -31,7 +31,11 @@ export const PUNCH_GLASS_CONFIGS = {
  * Glass Shard Particle Fragment
  */
 export class GlassShard {
-  constructor(x, y, color = '#ffffff') {
+  constructor(x = 0, y = 0, color = '#ffffff') {
+    this.reset(x, y, color);
+  }
+
+  reset(x, y, color) {
     this.x = x;
     this.y = y;
     this.color = color;
@@ -45,14 +49,15 @@ export class GlassShard {
     this.vRot = (Math.random() - 0.5) * 0.25;
     this.opacity = 1.0;
     this.markedForDeletion = false;
+    return this;
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += this.gravity;
-    this.rotation += this.vRot;
-    this.opacity -= 0.028;
+  update(dt = 1.0) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vy += this.gravity * dt;
+    this.rotation += this.vRot * dt;
+    this.opacity -= 0.028 * dt;
     if (this.opacity <= 0) {
       this.markedForDeletion = true;
     }
@@ -274,7 +279,7 @@ export class PunchTheGlassManager {
     this.drawCenterIdleZone(bounds);
   }
 
-  updateAndDraw(timestamp, bladeSegments) {
+  updateAndDraw(timestamp, bladeSegments, dt = 1.0) {
     const bounds = this.getGridBounds();
     const config = PUNCH_GLASS_CONFIGS[this.game.currentLevel] || PUNCH_GLASS_CONFIGS.medium;
 
@@ -327,7 +332,7 @@ export class PunchTheGlassManager {
     // 4. Update & Draw Glass Shard Fragments
     for (let i = this.shards.length - 1; i >= 0; i--) {
       const shard = this.shards[i];
-      shard.update();
+      shard.update(dt);
       shard.draw(this.ctx);
       if (shard.markedForDeletion) {
         this.shards.splice(i, 1);

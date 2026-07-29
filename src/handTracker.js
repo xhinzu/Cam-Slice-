@@ -14,19 +14,27 @@ export class HandTrackerManager {
     this.handHistories = new Map();
     this.smoothedPositions = new Map();
     
-    // Frame throttling cache
+    // Frame throttling cache (target 30-33 Hz inference, 60 Hz smooth rendering)
     this.lastVideoTime = -1;
+    this.lastDetectionTimestamp = 0;
+    this.detectionIntervalMs = 30; // ~33 Hz max GPU inference rate
     this.lastDetectionResult = { activeBladeSegments: [], handsTracked: 0 };
 
     // Blade configuration
     this.historyLength = 10;
-    this.sliceVelocityThreshold = 0.35; // Lower velocity threshold (px/ms) for responsive slicing
+    this.sliceVelocityThreshold = 0.35;
   }
 
   /**
    * Load MediaPipe Vision tasks WASM and initialize HandLandmarker model.
+   * Single instance is preserved and reused across the entire app session.
    */
   async initialize(onProgress = () => {}) {
+    if (this.isLoaded && this.handLandmarker) {
+      onProgress('Hand Tracking System Ready!');
+      return;
+    }
+
     onProgress('Downloading MediaPipe Vision WASM resolver...');
     
     const vision = await FilesetResolver.forVisionTasks(
@@ -53,19 +61,23 @@ export class HandTrackerManager {
 
   /**
    * Process a single video frame and return blade motion data with ZERO input latency.
+   * Throttles heavy GPU inference to ~33Hz while interpolating at display refresh rate.
    */
   detectHands(videoElement, timestamp, canvasWidth, canvasHeight) {
     if (!this.isLoaded || !this.handLandmarker || !videoElement || videoElement.videoWidth === 0) {
       return { activeBladeSegments: [], handsTracked: 0 };
     }
 
-    // High performance frame caching: skip duplicate GPU inferences if video frame timestamp is identical
-    if (videoElement.currentTime === this.lastVideoTime && this.lastDetectionResult) {
+    const now = performance.now();
+
+    // Skip heavy GPU inference if called faster than 33Hz, return cached/interpolated motion
+    if (now - this.lastDetectionTimestamp < this.detectionIntervalMs && this.lastDetectionResult) {
       return this.lastDetectionResult;
     }
+    this.lastDetectionTimestamp = now;
     this.lastVideoTime = videoElement.currentTime;
 
-    const results = this.handLandmarker.detectForVideo(videoElement, performance.now());
+    const results = this.handLandmarker.detectForVideo(videoElement, now);
     const activeBladeSegments = [];
     const activeHandIds = new Set();
 

@@ -525,15 +525,19 @@ export class MultiplayerManager {
       player.score = score;
     }
 
-    this.pushRoomStateToServer({
-      action: 'score-update',
-      score,
-      player: {
-        id: this.myId,
-        name: playerName,
-        isHost: this.isHost
-      }
-    });
+    const now = performance.now();
+    if (!this.lastScoreBroadcastTime || now - this.lastScoreBroadcastTime >= 100) {
+      this.lastScoreBroadcastTime = now;
+      this.pushRoomStateToServer({
+        action: 'score-update',
+        score,
+        player: {
+          id: this.myId,
+          name: playerName,
+          isHost: this.isHost
+        }
+      });
+    }
   }
 
   startCamFrameRelay() {

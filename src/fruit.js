@@ -17,7 +17,11 @@ export const FRUIT_TYPES = [
 ];
 
 export class Fruit {
-  constructor(canvasWidth, fallSpeedMultiplier = 1.0, isBomb = false) {
+  constructor(canvasWidth = 1280, fallSpeedMultiplier = 1.0, isBomb = false) {
+    this.reset(canvasWidth, fallSpeedMultiplier, isBomb);
+  }
+
+  reset(canvasWidth, fallSpeedMultiplier = 1.0, isBomb = false) {
     this.canvasWidth = canvasWidth;
     this.isBomb = isBomb;
     
@@ -36,31 +40,28 @@ export class Fruit {
       this.type = 'fruit';
     }
 
-    // Spawn parameters top-down
     const margin = 80;
-    this.x = margin + Math.random() * (canvasWidth - margin * 2);
+    this.x = margin + Math.random() * (Math.max(100, canvasWidth) - margin * 2);
     this.y = -60;
 
-    // Physics
     this.vx = (Math.random() - 0.5) * 3.5;
     this.vy = (2.5 + Math.random() * 2.5) * fallSpeedMultiplier;
     this.gravity = 0.22 * fallSpeedMultiplier;
 
-    // Rotation
     this.rotation = Math.random() * Math.PI * 2;
     this.vRot = (Math.random() - 0.5) * 0.08;
 
     this.sliced = false;
     this.markedForDeletion = false;
+    return this;
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += this.gravity;
-    this.rotation += this.vRot;
+  update(dt = 1.0) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vy += this.gravity * dt;
+    this.rotation += this.vRot * dt;
 
-    // Offscreen bottom check
     const bottomBound = (typeof window !== 'undefined' ? window.innerHeight : 1000) + 80;
     if (this.y - this.radius > bottomBound) {
       this.markedForDeletion = true;
@@ -87,28 +88,33 @@ export class Fruit {
  * Split Fruit Halves flying apart when sliced
  */
 export class SlicedHalf {
-  constructor(x, y, emoji, isLeft, color, vx, vy) {
+  constructor(x = 0, y = 0, emoji = '🍎', isLeft = true, color = '#ff4757', vx = 0, vy = 0) {
+    this.reset(x, y, emoji, isLeft, color, vx, vy);
+  }
+
+  reset(x, y, emoji, isLeft, color, vx, vy) {
     this.x = x;
     this.y = y;
     this.emoji = emoji;
     this.isLeft = isLeft;
     this.color = color;
     
-    this.vx = vx + (isLeft ? -4.5 : 4.5);
-    this.vy = vy - 2.0;
+    this.vx = (vx || 0) + (isLeft ? -4.5 : 4.5);
+    this.vy = (vy || 0) - 2.0;
     this.gravity = 0.35;
     this.rotation = 0;
     this.vRot = isLeft ? -0.12 : 0.12;
     this.opacity = 1.0;
     this.markedForDeletion = false;
+    return this;
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += this.gravity;
-    this.rotation += this.vRot;
-    this.opacity -= 0.018;
+  update(dt = 1.0) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vy += this.gravity * dt;
+    this.rotation += this.vRot * dt;
+    this.opacity -= 0.018 * dt;
 
     if (this.opacity <= 0 || this.y > 1200) {
       this.markedForDeletion = true;
@@ -121,7 +127,6 @@ export class SlicedHalf {
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rotation);
 
-    // Clip half circle to visually simulate a sliced fruit half
     ctx.beginPath();
     if (this.isLeft) {
       ctx.rect(-60, -60, 60, 120);
@@ -143,7 +148,11 @@ export class SlicedHalf {
  * Juice Particle Bursts
  */
 export class Particle {
-  constructor(x, y, color) {
+  constructor(x = 0, y = 0, color = '#ff4757') {
+    this.reset(x, y, color);
+  }
+
+  reset(x, y, color) {
     this.x = x;
     this.y = y;
     this.color = color;
@@ -156,14 +165,15 @@ export class Particle {
     this.radius = 3 + Math.random() * 6;
     this.opacity = 1.0;
     this.markedForDeletion = false;
+    return this;
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += this.gravity;
-    this.opacity -= 0.025;
-    this.radius *= 0.96;
+  update(dt = 1.0) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vy += this.gravity * dt;
+    this.opacity -= 0.025 * dt;
+    this.radius *= Math.pow(0.96, dt);
 
     if (this.opacity <= 0 || this.radius < 0.5) {
       this.markedForDeletion = true;
@@ -178,5 +188,32 @@ export class Particle {
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.restore();
+  }
+}
+
+/**
+ * High Performance Object Pool pattern to eliminate Garbage Collection pauses
+ */
+export class ObjectPool {
+  constructor(createFn) {
+    this.createFn = createFn;
+    this.pool = [];
+  }
+
+  get(...args) {
+    if (this.pool.length > 0) {
+      const obj = this.pool.pop();
+      if (typeof obj.reset === 'function') {
+        obj.reset(...args);
+      }
+      return obj;
+    }
+    return this.createFn(...args);
+  }
+
+  release(obj) {
+    if (obj && this.pool.length < 200) {
+      this.pool.push(obj);
+    }
   }
 }

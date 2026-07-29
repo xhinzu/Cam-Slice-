@@ -3,7 +3,7 @@
  * Fruit Spawning, Particle Splatters, Combo Detection, and Lives System.
  */
 
-import { Fruit, SlicedHalf, Particle } from './fruit.js';
+import { Fruit, SlicedHalf, Particle, ObjectPool } from './fruit.js';
 import { PunchTheGlassManager } from './punchGlass.js';
 import { sounds } from './audio.js';
 import { userStore } from './userStore.js';
@@ -52,6 +52,23 @@ export class GameManager {
     this.isMultiplayer = false;
     this.onMultiplayerSlice = null;
 
+    // High performance Object Pools
+    this.fruitPool = new ObjectPool((...args) => new Fruit(...args));
+    this.halfPool = new ObjectPool((...args) => new SlicedHalf(...args));
+    this.particlePool = new ObjectPool((...args) => new Particle(...args));
+
+    // Adaptive Performance Scaling
+    this.isLowEndDevice = Boolean((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || window.innerWidth <= 600);
+    this.maxParticles = this.isLowEndDevice ? 18 : 35;
+
+    // FPS & Delta Time Monitoring
+    this.lastFrameTime = 0;
+    this.fps = 60;
+    this.frameCount = 0;
+    this.lastFpsUpdate = 0;
+    this.showFPSCounter = false;
+    this.initDebugControls();
+
     // Entities & Mode Managers
     this.fruits = [];
     this.slicedHalves = [];
@@ -71,6 +88,19 @@ export class GameManager {
 
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
+  }
+
+  initDebugControls() {
+    window.toggleFPSCounter = () => {
+      this.showFPSCounter = !this.showFPSCounter;
+      console.log(`FPS Counter: ${this.showFPSCounter ? 'ENABLED' : 'DISABLED'}`);
+      return this.showFPSCounter;
+    };
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '`' || e.key === '~' || e.key === 'F8') {
+        this.showFPSCounter = !this.showFPSCounter;
+      }
+    });
   }
 
   resizeCanvas() {
@@ -162,6 +192,18 @@ export class GameManager {
   gameLoop(timestamp) {
     if (!this.isPlaying) return;
 
+    // Delta-time calculation for frame-rate independent movement
+    const dt = this.lastFrameTime ? Math.min(3.0, (timestamp - this.lastFrameTime) / 16.667) : 1.0;
+    this.lastFrameTime = timestamp;
+
+    // Monitor FPS
+    this.frameCount++;
+    if (timestamp - this.lastFpsUpdate >= 500) {
+      this.fps = Math.round((this.frameCount * 1000) / Math.max(1, timestamp - this.lastFpsUpdate));
+      this.frameCount = 0;
+      this.lastFpsUpdate = timestamp;
+    }
+
     if (this.camera && typeof this.camera.ensureActiveStream === 'function') {
       this.camera.ensureActiveStream();
     }
@@ -187,7 +229,7 @@ export class GameManager {
 
     // 2. Mode Specific Gameplay Logic
     if (this.gameMode === 'punch-glass') {
-      this.punchGlassManager.updateAndDraw(timestamp, activeBladeSegments);
+      this.punchGlassManager.updateAndDraw(timestamp, activeBladeSegments, dt);
     } else {
       // Classic Fruit Slice Mode
       const config = DIFFICULTY_CONFIGS[this.currentLevel] || DIFFICULTY_CONFIGS.medium;
@@ -195,7 +237,7 @@ export class GameManager {
         this.spawnFruitBurst(config);
         this.lastSpawnTime = timestamp;
       }
-      this.updateAndDrawEntities(activeBladeSegments, config);
+      this.updateAndDrawEntities(activeBladeSegments, config, dt);
     }
 
     // 3. Draw Glowing Blade Trails with Equipped Cursor Style
@@ -205,7 +247,29 @@ export class GameManager {
       this.ctx.restore();
     }
 
+    // 4. Debug FPS Overlay (Toggle with ~ or window.toggleFPSCounter())
+    if (this.showFPSCounter) {
+      this.renderFPSCounter(dt);
+    }
+
     this.animFrameId = requestAnimationFrame((t) => this.gameLoop(t));
+  }
+
+  renderFPSCounter(dt) {
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    this.ctx.strokeStyle = '#00f2fe';
+    this.ctx.lineWidth = 1;
+    this.ctx.fillRect(16, 16, 160, 54);
+    this.ctx.strokeRect(16, 16, 160, 54);
+
+    this.ctx.font = 'bold 14px "Fredoka", sans-serif';
+    this.ctx.fillStyle = '#00f2fe';
+    this.ctx.fillText(`FPS: ${this.fps} (dt: ${dt.toFixed(2)})`, 28, 38);
+    this.ctx.font = '11px sans-serif';
+    this.ctx.fillStyle = '#94a3b8';
+    this.ctx.fillText(`${this.isLowEndDevice ? 'Mobile/Low-End' : 'High Performance'} Tier`, 28, 56);
+    this.ctx.restore();
   }
 
   spawnFruitBurst(config) {
@@ -215,15 +279,15 @@ export class GameManager {
 
     for (let i = 0; i < count; i++) {
       const isBomb = Math.random() < config.bombChance;
-      this.fruits.push(new Fruit(this.canvas.width, config.fallSpeed, isBomb));
+      this.fruits.push(this.fruitPool.get(this.canvas.width, config.fallSpeed, isBomb));
     }
   }
 
-  updateAndDrawEntities(bladeSegments, config) {
+  updateAndDrawEntities(bladeSegments, config, dt = 1.0) {
     // A. Update Fruits
     for (let i = this.fruits.length - 1; i >= 0; i--) {
       const fruit = this.fruits[i];
-      fruit.update();
+      fruit.update(dt);
       fruit.draw(this.ctx);
 
       // Check offscreen fall (missed fruit)
@@ -236,7 +300,8 @@ export class GameManager {
             return;
           }
         }
-        this.fruits.splice(i, 1);
+        const removed = this.fruits.splice(i, 1)[0];
+        this.fruitPool.release(removed);
         continue;
       }
 
@@ -268,20 +333,22 @@ export class GameManager {
     // B. Update Sliced Halves
     for (let i = this.slicedHalves.length - 1; i >= 0; i--) {
       const half = this.slicedHalves[i];
-      half.update();
+      half.update(dt);
       half.draw(this.ctx);
       if (half.markedForDeletion) {
-        this.slicedHalves.splice(i, 1);
+        const removed = this.slicedHalves.splice(i, 1)[0];
+        this.halfPool.release(removed);
       }
     }
 
     // C. Update Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
-      p.update();
+      p.update(dt);
       p.draw(this.ctx);
       if (p.markedForDeletion) {
-        this.particles.splice(i, 1);
+        const removed = this.particles.splice(i, 1)[0];
+        this.particlePool.release(removed);
       }
     }
   }
@@ -296,12 +363,10 @@ export class GameManager {
       this.ui.triggerScreenFlash();
       this.shakeDuration = 20;
 
-      // Spawn fiery explosion particles
-      for (let i = 0; i < 15; i++) {
-        if (this.particles.length < 40) {
-          this.particles.push(new Particle(entity.x, entity.y, '#ff4757'));
-          this.particles.push(new Particle(entity.x, entity.y, '#ffa502'));
-        }
+      // Spawn fiery explosion particles (capped adaptively)
+      const countToSpawn = Math.min(12, this.maxParticles - this.particles.length);
+      for (let i = 0; i < countToSpawn; i++) {
+        this.particles.push(this.particlePool.get(entity.x, entity.y, i % 2 === 0 ? '#ff4757' : '#ffa502'));
       }
 
       if (!this.isMultiplayer && this.currentLevel !== 'freestyle') {
@@ -343,14 +408,14 @@ export class GameManager {
     }
     this.lastSliceTimestamp = now;
 
-    // Create 2 split fruit halves flying apart
-    this.slicedHalves.push(new SlicedHalf(entity.x, entity.y, entity.emoji, true, entity.color, entity.vx, entity.vy));
-    this.slicedHalves.push(new SlicedHalf(entity.x, entity.y, entity.emoji, false, entity.color, entity.vx, entity.vy));
+    // Create 2 split fruit halves flying apart (from Half ObjectPool)
+    this.slicedHalves.push(this.halfPool.get(entity.x, entity.y, entity.emoji, true, entity.color, entity.vx, entity.vy));
+    this.slicedHalves.push(this.halfPool.get(entity.x, entity.y, entity.emoji, false, entity.color, entity.vx, entity.vy));
 
-    // Create juice splash particles (capped at 40 max total)
-    const countToSpawn = Math.min(10, 40 - this.particles.length);
+    // Create juice splash particles (from Particle ObjectPool, capped adaptively)
+    const countToSpawn = Math.min(8, this.maxParticles - this.particles.length);
     for (let i = 0; i < countToSpawn; i++) {
-      this.particles.push(new Particle(entity.x, entity.y, entity.juiceColor));
+      this.particles.push(this.particlePool.get(entity.x, entity.y, entity.juiceColor));
     }
   }
 
