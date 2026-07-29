@@ -622,10 +622,20 @@ export class MultiplayerManager {
 
     const tracks = [];
     if (camStream) {
-      camStream.getVideoTracks().forEach((t) => tracks.push(t));
+      camStream.getVideoTracks().forEach((t) => {
+        try {
+          tracks.push(t.clone());
+        } catch (e) {
+          tracks.push(t);
+        }
+      });
     }
     if (audioTrack) {
-      tracks.push(audioTrack);
+      try {
+        tracks.push(audioTrack.clone());
+      } catch (e) {
+        tracks.push(audioTrack);
+      }
     }
 
     return tracks.length > 0 ? new MediaStream(tracks) : null;
@@ -835,10 +845,18 @@ export class MultiplayerManager {
 
       if (remainingMs <= 0) {
         this.stopMatchTimer();
-        if (this.isHost && this.roomState && this.roomState.matchState === 'playing') {
+        this.activeMatchState = 'ended';
+        this.game.stopGame();
+        this.stopCamFrameRelay();
+
+        if (this.roomState) {
           this.roomState.matchState = 'ended';
-          this.pushRoomStateToServer({ action: 'update', matchState: 'ended' });
-          this.onRoomStateChanged();
+          if (this.isHost) {
+            this.pushRoomStateToServer({ action: 'update', matchState: 'ended' });
+          }
+          const isHostFlag = this.roomState.hostId === this.myId || this.isHost;
+          this.mpUI.renderResults(this.roomState.players, isHostFlag);
+          this.mpUI.showResults();
         }
       }
     };

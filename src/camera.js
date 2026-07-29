@@ -19,6 +19,16 @@ export class CameraManager {
     }
 
     try {
+      if (this.stream && this.stream.active) {
+        const videoTracks = this.stream.getVideoTracks();
+        if (videoTracks.length > 0 && videoTracks[0].readyState === 'live') {
+          this.video.srcObject = this.stream;
+          await this.video.play().catch(() => {});
+          this.isReady = true;
+          return this.video;
+        }
+      }
+
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640, max: 1280 },
@@ -33,7 +43,7 @@ export class CameraManager {
 
       return new Promise((resolve) => {
         this.video.onloadedmetadata = () => {
-          this.video.play();
+          this.video.play().catch(() => {});
           this.isReady = true;
           resolve(this.video);
         };
@@ -41,6 +51,17 @@ export class CameraManager {
     } catch (err) {
       this.isReady = false;
       throw err;
+    }
+  }
+
+  async ensureActiveStream() {
+    const videoTracks = this.stream ? this.stream.getVideoTracks() : [];
+    if (!this.stream || !this.stream.active || videoTracks.length === 0 || videoTracks[0].readyState === 'ended') {
+      try {
+        await this.startCamera();
+      } catch (e) {}
+    } else if (this.video.paused || this.video.ended) {
+      this.video.play().catch(() => {});
     }
   }
 

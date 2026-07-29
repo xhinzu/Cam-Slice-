@@ -162,6 +162,10 @@ export class GameManager {
   gameLoop(timestamp) {
     if (!this.isPlaying) return;
 
+    if (this.camera && typeof this.camera.ensureActiveStream === 'function') {
+      this.camera.ensureActiveStream();
+    }
+
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Apply Screen Shake if active
