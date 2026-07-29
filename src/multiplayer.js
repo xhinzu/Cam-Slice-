@@ -8,6 +8,9 @@ import { WebRTCManager } from './webrtc.js';
 import { MultiplayerUIManager } from './multiplayerUI.js';
 import { VoiceChatManager } from './voiceChat.js';
 
+export const MAX_ROOM_PLAYERS = 12;
+export const MAX_VIDEO_TILES = 4;
+
 export class MultiplayerManager {
   constructor(gameManager, uiManager) {
     this.game = gameManager;
@@ -807,12 +810,13 @@ export class MultiplayerManager {
       // Start Camera Frame Relay
       this.startCamFrameRelay();
 
-      // Initiate WebRTC video calls if seeOthers is enabled
+      // Initiate WebRTC video calls if seeOthers is enabled (MAX 4 video tiles cap)
       if (seeOthers && players) {
-        players.forEach(p => {
-          if (p.id !== this.myId && p.id !== 'connecting') {
-            this.callPeerVideo(p.id);
-          }
+        // Selection rule: Pick up to MAX_VIDEO_TILES (4) remote players by room join order
+        const otherRemotePlayers = players.filter(p => p.id !== this.myId && p.id !== 'connecting');
+        const videoEligiblePeers = otherRemotePlayers.slice(0, MAX_VIDEO_TILES);
+        videoEligiblePeers.forEach(p => {
+          this.callPeerVideo(p.id);
         });
       }
 

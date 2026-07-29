@@ -72,7 +72,7 @@ export default async function handler(req, res) {
         const existingIdx = current.players.findIndex(p => p.id === player.id || p.name === player.name);
         if (existingIdx >= 0) {
           current.players[existingIdx] = { ...current.players[existingIdx], ...player };
-        } else if (current.players.length < 4) {
+        } else if (current.players.length < 12) {
           current.players.push(player);
         }
       } else if (action === 'update' && current) {

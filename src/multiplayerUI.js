@@ -248,9 +248,9 @@ export class MultiplayerUIManager {
           <div class="room-item-sub">Host: ${this.escapeHTML(room.hostName)} | ${room.difficulty.toUpperCase()} ${room.voiceChat ? '🎙️' : ''}</div>
         </div>
         <div class="room-item-right">
-          <span class="player-count-badge">${room.playerCount}/4 Players</span>
-          <button class="btn btn-primary btn-sm join-room-item-btn" data-room-code="${room.code}" ${room.playerCount >= 4 ? 'disabled' : ''}>
-            ${room.playerCount >= 4 ? 'Full' : 'Join ➔'}
+          <span class="player-count-badge">${room.playerCount}/12 Players</span>
+          <button class="btn btn-primary btn-sm join-room-item-btn" data-room-code="${room.code}" ${room.playerCount >= 12 ? 'disabled' : ''}>
+            ${room.playerCount >= 12 ? 'Full' : 'Join ➔'}
           </button>
         </div>
       </div>
@@ -268,6 +268,7 @@ export class MultiplayerUIManager {
 
   /**
    * Render or update PC POV Sidebar overlay during match.
+   * Caps visible video tiles at MAX 4; additional players appear in a compact list format.
    */
   renderSidebarPOV(players, currentUserId, seeOthers) {
     if (!this.mpSidebarPOV || !players) return;
@@ -277,10 +278,10 @@ export class MultiplayerUIManager {
     const otherPlayers = players.filter((p) => p.id !== currentUserId);
 
     if (!seeOthers) {
-      // "See Others" OFF: Render compact text list
+      // "See Others" OFF: Render compact text list for all players
       this.mpSidebarContent.className = 'sidebar-text-list';
       this.mpSidebarContent.innerHTML = `
-        <div class="sidebar-header">👥 Live Match Scores</div>
+        <div class="sidebar-header">👥 Live Match Scores (${otherPlayers.length})</div>
         ${otherPlayers.map((p) => `
           <div class="sidebar-player-row glass-panel">
             <span class="player-name">${this.escapeHTML(p.name)} ${p.isSpeaking ? '🔊' : (p.isMuted ? '🔇' : '')}</span>
@@ -289,9 +290,23 @@ export class MultiplayerUIManager {
         `).join('')}
       `;
     } else {
-      // "See Others" ON: Render video mesh tiles
-      this.mpSidebarContent.className = 'sidebar-video-grid';
-      otherPlayers.forEach((p) => {
+      // "See Others" ON: Render up to 4 video tiles by room join order
+      // Remaining players (5-12) render in a compact score list below
+      const videoPlayers = otherPlayers.slice(0, 4);
+      const listPlayers = otherPlayers.slice(4);
+
+      let videoGridEl = document.getElementById('pov-video-grid-container');
+      if (!videoGridEl) {
+        this.mpSidebarContent.className = 'sidebar-combined-container';
+        this.mpSidebarContent.innerHTML = `
+          <div id="pov-video-grid-container" class="sidebar-video-grid"></div>
+          <div id="pov-list-container" class="sidebar-text-list"></div>
+        `;
+        videoGridEl = document.getElementById('pov-video-grid-container');
+      }
+
+      // Render/update video tiles for top 4
+      videoPlayers.forEach((p) => {
         let tile = document.getElementById(`pov-tile-${p.id}`);
         const isSpeaking = Boolean(p.isSpeaking);
         const isMuted = Boolean(p.isMuted);
@@ -316,7 +331,7 @@ export class MultiplayerUIManager {
               <span id="pov-score-${p.id}" class="pov-score-badge">${p.score} 🍉</span>
             </div>
           `;
-          this.mpSidebarContent.appendChild(tile);
+          videoGridEl.appendChild(tile);
 
           // Re-attach cached video stream if already received
           if (this.cachedStreams && this.cachedStreams.has(p.id)) {
@@ -336,14 +351,34 @@ export class MultiplayerUIManager {
         }
       });
 
-      // Remove tiles of players who left
-      const existingTiles = this.mpSidebarContent.querySelectorAll('.pov-video-tile');
+      // Remove tiles of players no longer in top 4
+      const existingTiles = videoGridEl.querySelectorAll('.pov-video-tile');
       existingTiles.forEach((tile) => {
         const id = tile.id.replace('pov-tile-', '');
-        if (!otherPlayers.some((p) => p.id === id)) {
+        if (!videoPlayers.some((p) => p.id === id)) {
           tile.remove();
         }
       });
+
+      // Render compact text list for players 5-12
+      const listContainer = document.getElementById('pov-list-container');
+      if (listContainer) {
+        if (listPlayers.length > 0) {
+          listContainer.style.display = 'flex';
+          listContainer.innerHTML = `
+            <div class="sidebar-header">👥 Other Players (${listPlayers.length})</div>
+            ${listPlayers.map((p) => `
+              <div class="sidebar-player-row glass-panel">
+                <span class="player-name">${this.escapeHTML(p.name)} ${p.isSpeaking ? '🔊' : (p.isMuted ? '🔇' : '')}</span>
+                <span class="player-score">${p.score} 🍉</span>
+              </div>
+            `).join('')}
+          `;
+        } else {
+          listContainer.style.display = 'none';
+          listContainer.innerHTML = '';
+        }
+      }
     }
   }
 

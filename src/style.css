@@ -1392,7 +1392,27 @@ html, body {
   color: var(--color-blade-neon);
 }
 
-/* Sidebar Text List (See Others OFF) */
+/* Sidebar Combined Container (4 Video Tiles + Scrollable Score List) */
+.sidebar-combined-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sidebar-combined-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-combined-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 254, 0.4);
+  border-radius: 4px;
+}
+
+/* Sidebar Text List (See Others OFF or Players 5-12) */
 .sidebar-text-list {
   display: flex;
   flex-direction: column;
@@ -1401,6 +1421,17 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   padding: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.sidebar-text-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-text-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 254, 0.4);
+  border-radius: 4px;
 }
 
 .sidebar-header {
@@ -1516,6 +1547,18 @@ input:checked + .slider:before {
   gap: 12px;
   width: 100%;
   margin: 16px 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.lobby-player-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.lobby-player-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 254, 0.4);
+  border-radius: 4px;
 }
 
 .lobby-player-card {
