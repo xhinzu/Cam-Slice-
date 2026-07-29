@@ -49,8 +49,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Room code required' });
       }
 
+      const targetCode = String(code).toUpperCase();
+
+      if (action === 'delete') {
+        try {
+          let current = await kv.get('public_rooms_list');
+          if (Array.isArray(current)) {
+            current = current.filter(r => r && r.code !== targetCode);
+            await kv.set('public_rooms_list', current);
+          }
+        } catch (e) {}
+        memoryRooms = memoryRooms.filter(r => r && r.code !== targetCode);
+        return res.status(200).json({ success: true, deleted: true });
+      }
+
       const newEntry = {
-        code: String(code).toUpperCase(),
+        code: targetCode,
         hostName: String(hostName || 'Host').substring(0, 15),
         difficulty: String(difficulty || 'medium'),
         playerCount: Number(playerCount || 1),

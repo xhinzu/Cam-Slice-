@@ -117,9 +117,23 @@ export default async function handler(req, res) {
             if (player.id) current.players[idx].id = player.id;
           }
         }
+      } else if (action === 'delete' && current) {
+        try {
+          await kv.del(kvKey);
+        } catch (e) {}
+        inMemoryRoomStore.delete(roomCode);
+        return res.status(200).json({ success: true, deleted: true, state: null });
       } else if (action === 'leave' && current && player) {
+        const isHostLeaving = player.id === current.hostId || player.isHost || player.name === current.players?.find(p => p.isHost)?.name;
         if (current.players) {
           current.players = current.players.filter(p => p.id !== player.id && p.name !== player.name);
+        }
+        if (isHostLeaving || !current.players || current.players.length === 0) {
+          try {
+            await kv.del(kvKey);
+          } catch (e) {}
+          inMemoryRoomStore.delete(roomCode);
+          return res.status(200).json({ success: true, deleted: true, state: null });
         }
       }
 

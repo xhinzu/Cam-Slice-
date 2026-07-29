@@ -891,10 +891,21 @@ export class MultiplayerManager {
     }
 
     if (this.currentRoomCode && this.myId) {
+      const code = this.currentRoomCode;
+      const isHost = this.isHost;
+
       this.pushRoomStateToServer({
-        action: 'leave',
-        player: { id: this.myId }
+        action: isHost ? 'delete' : 'leave',
+        player: { id: this.myId, isHost }
       });
+
+      if (isHost) {
+        fetch('/api/public-rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, action: 'delete' })
+        }).catch(() => {});
+      }
     }
 
     for (const [peerId, call] of this.mediaCalls) {
@@ -915,5 +926,8 @@ export class MultiplayerManager {
     this.myId = null;
     this.isHost = false;
     this.activeMatchState = null;
+    this.mpUI.hideAllMPModals();
+    this.mpUI.hideSidebarPOV();
+    this.mpUI.hideTimerHUD();
   }
 }
