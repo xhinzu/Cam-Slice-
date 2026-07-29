@@ -757,6 +757,14 @@ export class MultiplayerManager {
 
     const { matchState, players, seeOthers, difficulty, matchEndsAt } = this.roomState;
 
+    // Prevent transient lobby popups during active gameplay
+    if (this.activeMatchState === 'playing' && matchState === 'lobby') {
+      if (players) {
+        this.mpUI.renderSidebarPOV(players, this.myId, seeOthers);
+      }
+      return;
+    }
+
     if (matchState === 'lobby') {
       if (this.activeMatchState !== 'lobby') {
         this.activeMatchState = 'lobby';

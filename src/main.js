@@ -63,11 +63,14 @@ class AppController {
     this.bindEvents();
     this.updateProfileAndStoreUI();
 
-    // 6. Navigate to initial state (Main Menu)
+    // 6. Navigate to initial state (Main Menu or Direct Room Join)
+    const params = new URLSearchParams(window.location.search);
+    const hasRoomCode = Boolean(params.get('room'));
+
     const savedName = this.ui.getPlayerName();
     if (!savedName) {
       this.ui.showNameEntry();
-    } else {
+    } else if (!hasRoomCode) {
       this.ui.showMainMenu(this.selectedLevel);
     }
   }

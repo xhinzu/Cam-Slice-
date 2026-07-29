@@ -38,10 +38,16 @@ export class UserStoreManager {
 
   checkSpecialBonus() {
     const savedName = (localStorage.getItem('fruit_slice_player_name') || '').trim().toLowerCase();
-    if (savedName === 'xhinzu' || savedName === '') {
+    if (savedName === 'xhinzu') {
       const current = parseInt(localStorage.getItem(this.coinsKey) || '0', 10);
       if (current < 9000) {
         localStorage.setItem(this.coinsKey, '9000');
+      }
+    } else {
+      // If a non-xhinzu player received 9000 coins previously due to empty name bug, reset to 100
+      const current = parseInt(localStorage.getItem(this.coinsKey) || '0', 10);
+      if (current === 9000) {
+        localStorage.setItem(this.coinsKey, '100');
       }
     }
   }

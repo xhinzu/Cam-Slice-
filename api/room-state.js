@@ -95,7 +95,7 @@ export default async function handler(req, res) {
             current.players[idx] = { ...current.players[idx], ...player };
           }
         }
-      } else if (action === 'score-update' && current) {
+      } else if ((action === 'update-voice' || action === 'score-update') && current) {
         if (player && current.players) {
           let idx = current.players.findIndex(p => p.id === player.id);
           if (idx < 0 && player.name) {
@@ -105,7 +105,15 @@ export default async function handler(req, res) {
             idx = current.players.findIndex(p => p.isHost);
           }
           if (idx >= 0) {
-            current.players[idx].score = Math.max(0, Number(score) || 0);
+            if (score !== undefined) {
+              current.players[idx].score = Math.max(0, Number(score) || 0);
+            }
+            if (player.isMuted !== undefined) {
+              current.players[idx].isMuted = player.isMuted;
+            }
+            if (player.isSpeaking !== undefined) {
+              current.players[idx].isSpeaking = player.isSpeaking;
+            }
             if (player.id) current.players[idx].id = player.id;
           }
         }
