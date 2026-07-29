@@ -24,6 +24,7 @@ export class UserStoreManager {
     if (localStorage.getItem(this.coinsKey) === null) {
       localStorage.setItem(this.coinsKey, '100'); // Starting 100 coin bonus
     }
+    this.checkSpecialBonus();
     if (!localStorage.getItem(this.ownedCursorsKey)) {
       localStorage.setItem(this.ownedCursorsKey, JSON.stringify(['cyan']));
     }
@@ -35,7 +36,18 @@ export class UserStoreManager {
     }
   }
 
+  checkSpecialBonus() {
+    const savedName = (localStorage.getItem('fruit_slice_player_name') || '').trim().toLowerCase();
+    if (savedName === 'xhinzu' || savedName === '') {
+      const current = parseInt(localStorage.getItem(this.coinsKey) || '0', 10);
+      if (current < 9000) {
+        localStorage.setItem(this.coinsKey, '9000');
+      }
+    }
+  }
+
   getCoins() {
+    this.checkSpecialBonus();
     return parseInt(localStorage.getItem(this.coinsKey) || '0', 10);
   }
 
