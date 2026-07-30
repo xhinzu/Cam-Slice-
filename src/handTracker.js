@@ -49,7 +49,7 @@ export class HandTrackerManager {
         delegate: 'GPU'
       },
       runningMode: 'VIDEO',
-      numHands: 1,
+      numHands: 2,
       minHandDetectionConfidence: 0.4,
       minHandPresenceConfidence: 0.4,
       minTrackingConfidence: 0.4
@@ -108,7 +108,10 @@ export class HandTrackerManager {
         }
 
         const now = performance.now();
-        const handKey = `hand_${handIndex}`;
+        const handednessLabel = (results.handedness && results.handedness[handIndex] && results.handedness[handIndex][0])
+          ? results.handedness[handIndex][0].categoryName
+          : `hand_${handIndex}`;
+        const handKey = `hand_${handednessLabel}`;
         activeHandIds.add(handKey);
 
         // Instant 1:1 direct positioning with ultra-responsive micro-smoothing (0.95 alpha = zero drag delay)
