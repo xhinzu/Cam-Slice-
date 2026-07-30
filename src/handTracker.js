@@ -232,59 +232,7 @@ export class HandTrackerManager {
     rawHandLandmarks.forEach((landmarks) => {
       if (!landmarks || landmarks.length < 21) return;
 
-      // Calculate hand bounding box for AI HUD visual
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      landmarks.forEach((p) => {
-        if (p.x < minX) minX = p.x;
-        if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y;
-        if (p.y > maxY) maxY = p.y;
-      });
-
-      const pad = 16;
-      minX = Math.max(10, minX - pad);
-      minY = Math.max(10, minY - pad);
-      maxX = Math.min(ctx.canvas.width - 10, maxX + pad);
-      maxY = Math.min(ctx.canvas.height - 10, maxY + pad);
-
-      // 1. Draw Minimalist Cyber/AI Bounding Box & HUD Label
-      ctx.strokeStyle = colors.glow;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([5, 5]);
-      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
-      ctx.setLineDash([]);
-
-      // Corner Brackets
-      const cornerLen = 10;
-      ctx.strokeStyle = colors.line;
-      ctx.lineWidth = 2.5;
-
-      // Top-Left Corner
-      ctx.beginPath();
-      ctx.moveTo(minX, minY + cornerLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + cornerLen, minY);
-      ctx.stroke();
-
-      // Top-Right Corner
-      ctx.beginPath();
-      ctx.moveTo(maxX - cornerLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + cornerLen);
-      ctx.stroke();
-
-      // Bottom-Left Corner
-      ctx.beginPath();
-      ctx.moveTo(minX, maxY - cornerLen); ctx.lineTo(minX, maxY); ctx.lineTo(minX + cornerLen, maxY);
-      ctx.stroke();
-
-      // Bottom-Right Corner
-      ctx.beginPath();
-      ctx.moveTo(maxX - cornerLen, maxY); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX, maxY - cornerLen);
-      ctx.stroke();
-
-      // AI HUD Label Text
-      ctx.font = '900 10px "Fredoka", "Outfit", monospace';
-      ctx.fillStyle = colors.line;
-      ctx.fillText('[AI HAND LANDMARKS]', minX + 4, minY - 6);
-
-      // 2. Draw Skeletal Connections (Bones)
+      // 1. Draw Skeletal Connections (Bones)
       ctx.shadowColor = colors.glow;
       ctx.shadowBlur = 8;
       ctx.strokeStyle = colors.line;
