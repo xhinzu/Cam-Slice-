@@ -44,12 +44,12 @@ export class Fruit {
     this.x = margin + Math.random() * (Math.max(100, canvasWidth) - margin * 2);
     this.y = -60;
 
-    this.vx = (Math.random() - 0.5) * 3.5;
-    this.vy = (2.5 + Math.random() * 2.5) * fallSpeedMultiplier;
-    this.gravity = 0.22 * fallSpeedMultiplier;
+    this.vx = (Math.random() - 0.5) * 2.2;
+    this.vy = (1.1 + Math.random() * 1.2) * fallSpeedMultiplier;
+    this.gravity = 0.085 * fallSpeedMultiplier;
 
     this.rotation = Math.random() * Math.PI * 2;
-    this.vRot = (Math.random() - 0.5) * 0.08;
+    this.vRot = (Math.random() - 0.5) * 0.04;
 
     this.sliced = false;
     this.markedForDeletion = false;
@@ -99,11 +99,11 @@ export class SlicedHalf {
     this.isLeft = isLeft;
     this.color = color;
     
-    this.vx = (vx || 0) + (isLeft ? -4.5 : 4.5);
-    this.vy = (vy || 0) - 2.0;
-    this.gravity = 0.35;
+    this.vx = (vx * 0.5 || 0) + (isLeft ? -3.0 : 3.0);
+    this.vy = (vy * 0.5 || 0) - 1.2;
+    this.gravity = 0.14;
     this.rotation = 0;
-    this.vRot = isLeft ? -0.12 : 0.12;
+    this.vRot = isLeft ? -0.06 : 0.06;
     this.opacity = 1.0;
     this.markedForDeletion = false;
     return this;
@@ -114,7 +114,7 @@ export class SlicedHalf {
     this.y += this.vy * dt;
     this.vy += this.gravity * dt;
     this.rotation += this.vRot * dt;
-    this.opacity -= 0.018 * dt;
+    this.opacity -= 0.015 * dt;
 
     if (this.opacity <= 0 || this.y > 1200) {
       this.markedForDeletion = true;
@@ -158,10 +158,10 @@ export class Particle {
     this.color = color;
     
     const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 8;
+    const speed = 1.5 + Math.random() * 5.0;
     this.vx = Math.cos(angle) * speed;
     this.vy = Math.sin(angle) * speed;
-    this.gravity = 0.25;
+    this.gravity = 0.10;
     this.radius = 3 + Math.random() * 6;
     this.opacity = 1.0;
     this.markedForDeletion = false;

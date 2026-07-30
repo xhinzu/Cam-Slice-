@@ -119,12 +119,14 @@ export class HandTrackerManager {
         const handKey = `hand_${handednessLabel}`;
         activeHandIds.add(handKey);
 
-        // Instant 1:1 direct positioning with ultra-responsive micro-smoothing (0.95 alpha = zero drag delay)
+        // Adaptive velocity-aware low-pass filter for silky 60 FPS blade movement with zero jitter
         let smoothX = rawX;
         let smoothY = rawY;
         if (this.smoothedPositions.has(handKey)) {
           const prev = this.smoothedPositions.get(handKey);
-          const alpha = 0.95;
+          const dist = Math.hypot(rawX - prev.x, rawY - prev.y);
+          // Scale alpha adaptively: 0.65 for slow steady hold, up to 0.92 for rapid slices
+          const alpha = Math.min(0.92, Math.max(0.65, 0.65 + (dist / 25.0) * 0.27));
           smoothX = alpha * rawX + (1 - alpha) * prev.x;
           smoothY = alpha * rawY + (1 - alpha) * prev.y;
         }

@@ -10,26 +10,26 @@ import { userStore } from './userStore.js';
 
 export const DIFFICULTY_CONFIGS = {
   easy: {
-    spawnInterval: 1200,
-    fallSpeed: 0.9,
+    spawnInterval: 1400,
+    fallSpeed: 0.80,
     burstCount: [1, 1],
     bombChance: 0.10
   },
   medium: {
-    spawnInterval: 800,
-    fallSpeed: 1.25,
+    spawnInterval: 950,
+    fallSpeed: 0.95,
     burstCount: [1, 2],
     bombChance: 0.20
   },
   hard: {
-    spawnInterval: 500,
-    fallSpeed: 1.65,
+    spawnInterval: 650,
+    fallSpeed: 1.15,
     burstCount: [2, 3],
     bombChance: 0.35
   },
   freestyle: {
-    spawnInterval: 750,
-    fallSpeed: 1.20,
+    spawnInterval: 850,
+    fallSpeed: 0.90,
     burstCount: [1, 2],
     bombChance: 0.0
   }
@@ -213,8 +213,11 @@ export class GameManager {
   gameLoop(timestamp) {
     if (!this.isPlaying) return;
 
-    // Delta-time calculation for frame-rate independent movement
-    const dt = this.lastFrameTime ? Math.min(3.0, (timestamp - this.lastFrameTime) / 16.667) : 1.0;
+    // Exponential Moving Average filter for 60 FPS / 120 FPS ultra-smooth, micro-stutter-free motion
+    const rawDt = this.lastFrameTime ? (timestamp - this.lastFrameTime) / 16.667 : 1.0;
+    const clampedDt = Math.max(0.1, Math.min(2.0, rawDt));
+    this.smoothedDt = this.smoothedDt ? (this.smoothedDt * 0.75 + clampedDt * 0.25) : clampedDt;
+    const dt = this.smoothedDt;
     this.lastFrameTime = timestamp;
 
     // Monitor FPS
