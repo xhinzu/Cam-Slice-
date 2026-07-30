@@ -247,8 +247,10 @@ export class GameManager {
       this.updateAndDrawEntities(activeBladeSegments, config, dt);
     }
 
-    // 4. Draw Glowing Blade Trails with Equipped Cursor Style
-    this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments, userStore.getEquippedCursor());
+    // 4. Draw Glowing Blade Trails with Equipped Cursor Style (Fruit Slice Mode only)
+    if (this.gameMode !== 'punch-glass') {
+      this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments, userStore.getEquippedCursor());
+    }
 
     if (this.shakeDuration > 0) {
       this.ctx.restore();
