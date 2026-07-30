@@ -240,27 +240,19 @@ export class UIManager {
     }, 1200);
   }
 
-  updateHUDLives(remainingLives, isFreestyle = false) {
+  updateHUDLives(remainingLives, isFreestyle = false, maxLives = 5) {
     if (!this.livesContainer) return;
     if (isFreestyle || remainingLives >= 900) {
       this.livesContainer.innerHTML = '<span class="freestyle-hud-tag">♾️ UNLIMITED</span>';
       return;
     }
 
-    this.livesContainer.innerHTML = `
-      <span class="heart active">❤️</span>
-      <span class="heart active">❤️</span>
-      <span class="heart active">❤️</span>
-    `;
-
-    const hearts = this.livesContainer.querySelectorAll('.heart');
-    hearts.forEach((heart, idx) => {
-      if (idx < remainingLives) {
-        heart.classList.add('active');
-      } else {
-        heart.classList.remove('active');
-      }
-    });
+    let html = '';
+    for (let i = 0; i < maxLives; i++) {
+      const activeClass = i < remainingLives ? 'active' : '';
+      html += `<span class="heart ${activeClass}">❤️</span>`;
+    }
+    this.livesContainer.innerHTML = html;
   }
 
   updateLevelBadge(level) {

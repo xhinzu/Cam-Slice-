@@ -386,9 +386,10 @@ export class PunchTheGlassManager {
     }
 
     if (pane.type === 'green') {
-      // Safe Green Hit -> Score!
+      // Safe Green Hit -> Score & Heart Gain Counter!
       this.game.score++;
       userStore.recordGlassPunch();
+      this.game.registerHit();
       this.game.ui.updateHUDScore(this.game.score);
       if (this.game.isMultiplayer && typeof this.game.onMultiplayerSlice === 'function') {
         this.game.onMultiplayerSlice(this.game.score);
@@ -398,9 +399,10 @@ export class PunchTheGlassManager {
       sounds.playBomb();
       this.game.ui.triggerScreenFlash();
       this.game.shakeDuration = 15;
+      this.game.consecutiveHits = 0;
       if (!this.game.isMultiplayer && this.game.currentLevel !== 'freestyle') {
         this.game.lives--;
-        this.game.ui.updateHUDLives(this.game.lives);
+        this.game.ui.updateHUDLives(this.game.lives, false, this.game.maxLives);
 
         if (this.game.lives <= 0) {
           this.game.triggerGameOver();

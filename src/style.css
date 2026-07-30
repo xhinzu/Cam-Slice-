@@ -337,17 +337,26 @@ html, body {
 
 .lives-container {
   display: flex;
-  gap: 6px;
-  font-size: 1.8rem;
+  gap: 4px;
+  font-size: 1.6rem;
+}
+
+@media (max-width: 600px) {
+  .lives-container {
+    font-size: 1.3rem;
+    gap: 3px;
+  }
 }
 
 .heart {
-  filter: grayscale(1) opacity(0.3);
-  transition: filter 0.3s;
+  filter: grayscale(1) opacity(0.25);
+  transform: scale(0.9);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .heart.active {
   filter: grayscale(0) opacity(1) drop-shadow(0 0 10px rgba(255, 71, 87, 0.8));
+  transform: scale(1);
 }
 
 /* Modal Windows */

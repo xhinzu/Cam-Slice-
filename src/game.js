@@ -46,7 +46,9 @@ export class GameManager {
 
     this.isPlaying = false;
     this.score = 0;
-    this.lives = 3;
+    this.maxLives = 5;
+    this.lives = 5;
+    this.consecutiveHits = 0;
     this.currentLevel = 'medium';
     this.gameMode = 'fruit-slice'; // 'fruit-slice' or 'punch-glass'
     this.isMultiplayer = false;
@@ -114,7 +116,9 @@ export class GameManager {
     this.isMultiplayer = false;
     this.onMultiplayerSlice = null;
     this.score = 0;
-    this.lives = (level === 'freestyle') ? 999 : 3;
+    this.maxLives = 5;
+    this.lives = (level === 'freestyle') ? 999 : 5;
+    this.consecutiveHits = 0;
     this.fruits = [];
     this.slicedHalves = [];
     this.particles = [];
@@ -126,7 +130,7 @@ export class GameManager {
     }
 
     this.ui.updateHUDScore(0);
-    this.ui.updateHUDLives(this.lives, level === 'freestyle');
+    this.ui.updateHUDLives(this.lives, level === 'freestyle', this.maxLives);
     this.ui.updateLevelBadge(level);
     this.ui.setHUDVisible(true);
 
@@ -286,6 +290,19 @@ export class GameManager {
     }
   }
 
+  registerHit() {
+    this.consecutiveHits++;
+    if (this.consecutiveHits >= 3) {
+      this.consecutiveHits = 0;
+      if (this.lives < this.maxLives && this.lives > 0 && this.currentLevel !== 'freestyle') {
+        this.lives++;
+        this.ui.updateHUDLives(this.lives, false, this.maxLives);
+        sounds.playCombo();
+        this.ui.showCombo('❤️ +1 HEART!');
+      }
+    }
+  }
+
   updateAndDrawEntities(bladeSegments, config, dt = 1.0) {
     // A. Update Fruits
     for (let i = this.fruits.length - 1; i >= 0; i--) {
@@ -297,7 +314,8 @@ export class GameManager {
       if (fruit.markedForDeletion) {
         if (!fruit.sliced && fruit.type === 'fruit' && !this.isMultiplayer && this.currentLevel !== 'freestyle') {
           this.lives--;
-          this.ui.updateHUDLives(this.lives);
+          this.consecutiveHits = 0;
+          this.ui.updateHUDLives(this.lives, false, this.maxLives);
           if (this.lives <= 0) {
             this.triggerGameOver();
             return;
@@ -372,9 +390,10 @@ export class GameManager {
         this.particles.push(this.particlePool.get(entity.x, entity.y, i % 2 === 0 ? '#ff4757' : '#ffa502'));
       }
 
+      this.consecutiveHits = 0;
       if (!this.isMultiplayer && this.currentLevel !== 'freestyle') {
         this.lives = 0;
-        this.ui.updateHUDLives(0);
+        this.ui.updateHUDLives(0, false, this.maxLives);
         this.triggerGameOver();
       } else if (this.isMultiplayer) {
         // Multiplayer: bomb penalty reduces score by 2 (min 0)
@@ -393,6 +412,7 @@ export class GameManager {
 
     this.score++;
     userStore.recordFruitSlice();
+    this.registerHit();
     this.ui.updateHUDScore(this.score);
     if (this.isMultiplayer && this.onMultiplayerSlice) {
       this.onMultiplayerSlice(this.score);
