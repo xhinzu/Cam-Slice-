@@ -104,7 +104,11 @@ export class UIManager {
   }
 
   getPlayerName() {
-    return localStorage.getItem(this.playerNameKey) || 'xhinzu';
+    return (localStorage.getItem(this.playerNameKey) || '').trim();
+  }
+
+  getDisplayName() {
+    return this.getPlayerName() || 'Ninja Slicer';
   }
 
   setPlayerName(name) {

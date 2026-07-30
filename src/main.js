@@ -165,7 +165,7 @@ class AppController {
       });
     }
 
-    // Name Entry Form submit -> proceed to Tutorial
+    // Name Entry Form submit -> proceed to Room Join (if link) or Tutorial
     this.ui.nameForm.addEventListener('submit', (e) => {
       e.preventDefault();
       bgm.play();
@@ -173,7 +173,15 @@ class AppController {
       if (inputVal) {
         this.ui.setPlayerName(inputVal);
         this.updateProfileAndStoreUI();
-        this.ui.showTutorial();
+        
+        const params = new URLSearchParams(window.location.search);
+        const roomCode = params.get('room');
+        if (roomCode && roomCode.length === 6) {
+          this.multiplayer.joinRoom(roomCode.toUpperCase());
+        } else {
+          this.ui.showTutorial();
+        }
+
         // Refresh leaderboard active player highlight
         leaderboard.subscribeTopScores((scores) => {
           this.ui.renderLeaderboard(scores, inputVal);
