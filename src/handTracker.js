@@ -235,12 +235,12 @@ export class HandTrackerManager {
     rawHandLandmarks.forEach((landmarks) => {
       if (!landmarks || landmarks.length < 21) return;
 
-      // 1. Draw Skeletal Connections (Bones)
       ctx.shadowColor = colors.glow;
       ctx.shadowBlur = 8;
       ctx.strokeStyle = colors.line;
       ctx.lineWidth = 3.5;
 
+      // 1. Draw Palm & Finger Hand Skeleton (21 MediaPipe Landmarks)
       HAND_CONNECTIONS.forEach(([i, j]) => {
         const p1 = landmarks[i];
         const p2 = landmarks[j];
@@ -252,26 +252,188 @@ export class HandTrackerManager {
         ctx.stroke();
       });
 
-      // 3. Draw Joint Nodes (Landmark Dots)
+      // 2. Compute Forearm & Bicep Extended Skeletal Mesh
+      const wrist = landmarks[0];
+      const middleMCP = landmarks[9];
+      const indexMCP = landmarks[5];
+      const pinkyMCP = landmarks[17];
+      const middleTip = landmarks[12];
+
+      const handLen = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y) || 120;
+      const fwdDx = middleMCP.x - wrist.x;
+      const fwdDy = middleMCP.y - wrist.y;
+      const fwdDist = Math.hypot(fwdDx, fwdDy) || 1;
+      const fwdX = fwdDx / fwdDist;
+      const fwdY = fwdDy / fwdDist;
+
+      // Backward Arm Direction Vector (from wrist down arm)
+      const armX = -fwdX;
+      const armY = -fwdY;
+
+      // Perpendicular Side Vector
+      const sideX = -armY;
+      const sideY = armX;
+
+      // Dimensions
+      const forearmLen = handLen * 1.45;
+      const bicepLen = handLen * 1.35;
+      const wWidth = Math.hypot(pinkyMCP.x - indexMCP.x, pinkyMCP.y - indexMCP.y) * 0.45;
+      const eWidth = wWidth * 1.35;
+      const sWidth = eWidth * 1.4;
+
+      // Key Joints
+      const elbowX = wrist.x + armX * forearmLen;
+      const elbowY = wrist.y + armY * forearmLen;
+
+      const shoulderX = elbowX + armX * bicepLen;
+      const shoulderY = elbowY + armY * bicepLen;
+
+      // Rail Anchors
+      const wLeft = { x: wrist.x + sideX * wWidth, y: wrist.y + sideY * wWidth };
+      const wRight = { x: wrist.x - sideX * wWidth, y: wrist.y - sideY * wWidth };
+
+      const eLeft = { x: elbowX + sideX * eWidth, y: elbowY + sideY * eWidth };
+      const eRight = { x: elbowX - sideX * eWidth, y: elbowY - sideY * eWidth };
+
+      const sLeft = { x: shoulderX + sideX * sWidth, y: shoulderY + sideY * sWidth };
+      const sRight = { x: shoulderX - sideX * sWidth, y: shoulderY - sideY * sWidth };
+
+      // Forearm Tech Cross-Rings (at 33% and 66%)
+      const r1C = { x: wrist.x + armX * (forearmLen * 0.33), y: wrist.y + armY * (forearmLen * 0.33) };
+      const r1W = wWidth + (eWidth - wWidth) * 0.33;
+      const r1L = { x: r1C.x + sideX * r1W, y: r1C.y + sideY * r1W };
+      const r1R = { x: r1C.x - sideX * r1W, y: r1C.y - sideY * r1W };
+
+      const r2C = { x: wrist.x + armX * (forearmLen * 0.66), y: wrist.y + armY * (forearmLen * 0.66) };
+      const r2W = wWidth + (eWidth - wWidth) * 0.66;
+      const r2L = { x: r2C.x + sideX * r2W, y: r2C.y + sideY * r2W };
+      const r2R = { x: r2C.x - sideX * r2W, y: r2C.y - sideY * r2W };
+
+      // Bicep Muscle Curve Midpoints
+      const bMid = { x: elbowX + armX * (bicepLen * 0.5), y: elbowY + armY * (bicepLen * 0.5) };
+      const bBulge = sWidth * 1.25;
+      const bL = { x: bMid.x + sideX * bBulge, y: bMid.y + sideY * bBulge };
+      const bR = { x: bMid.x - sideX * bBulge, y: bMid.y - sideY * bBulge };
+
+      // --- Draw Forearm Cyber Bones (Dual Rails + Center Marrow + Cross-Rings) ---
+      // Left Forearm Rail
+      ctx.beginPath();
+      ctx.moveTo(wLeft.x, wLeft.y);
+      ctx.lineTo(r1L.x, r1L.y);
+      ctx.lineTo(r2L.x, r2L.y);
+      ctx.lineTo(eLeft.x, eLeft.y);
+      ctx.stroke();
+
+      // Right Forearm Rail
+      ctx.beginPath();
+      ctx.moveTo(wRight.x, wRight.y);
+      ctx.lineTo(r1R.x, r1R.y);
+      ctx.lineTo(r2R.x, r2R.y);
+      ctx.lineTo(eRight.x, eRight.y);
+      ctx.stroke();
+
+      // Center Forearm Spine
+      ctx.beginPath();
+      ctx.moveTo(wrist.x, wrist.y);
+      ctx.lineTo(elbowX, elbowY);
+      ctx.stroke();
+
+      // Forearm Tech Cross-Rings
+      ctx.beginPath();
+      ctx.moveTo(r1L.x, r1L.y); ctx.lineTo(r1R.x, r1R.y);
+      ctx.moveTo(r2L.x, r2L.y); ctx.lineTo(r2R.x, r2R.y);
+      ctx.stroke();
+
+      // --- Draw Bicep Cyber Bones (Muscle Curved Rails + Humerus Spine) ---
+      // Outer Bicep Curved Line (Left)
+      ctx.beginPath();
+      ctx.moveTo(eLeft.x, eLeft.y);
+      ctx.quadraticCurveTo(bL.x, bL.y, sLeft.x, sLeft.y);
+      ctx.stroke();
+
+      // Outer Bicep Curved Line (Right)
+      ctx.beginPath();
+      ctx.moveTo(eRight.x, eRight.y);
+      ctx.quadraticCurveTo(bR.x, bR.y, sRight.x, sRight.y);
+      ctx.stroke();
+
+      // Center Humerus Spine
+      ctx.beginPath();
+      ctx.moveTo(elbowX, elbowY);
+      ctx.lineTo(shoulderX, shoulderY);
+      ctx.stroke();
+
+      // Bicep Muscle Mid Cross-Ring
+      ctx.beginPath();
+      ctx.moveTo(bL.x, bL.y); ctx.lineTo(bR.x, bR.y);
+      ctx.stroke();
+
+      // Shoulder Base Bar
+      ctx.beginPath();
+      ctx.moveTo(sLeft.x, sLeft.y); ctx.lineTo(sRight.x, sRight.y);
+      ctx.stroke();
+
+      // 3. Draw Joint Nodes (Fingers + Wrist + Elbow + Shoulder)
       const fingertipIndices = [4, 8, 12, 16, 20];
 
+      // Finger & Palm Joint Nodes
       landmarks.forEach((p, idx) => {
         const isFingertip = fingertipIndices.includes(idx);
         const radius = isFingertip ? 5.5 : 4;
 
-        // Outer Ring
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius + 2, 0, Math.PI * 2);
         ctx.strokeStyle = colors.jointBorder;
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Inner Core Node
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = isFingertip ? colors.line : colors.joint;
         ctx.fill();
       });
+
+      // Forearm & Arm Structural Joint Nodes
+      const armNodes = [
+        r1L, r1R, r2L, r2R, eLeft, eRight, bL, bR, sLeft, sRight
+      ];
+
+      armNodes.forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+        ctx.strokeStyle = colors.jointBorder;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = colors.joint;
+        ctx.fill();
+      });
+
+      // Large Elbow Joint Ring Node
+      ctx.beginPath();
+      ctx.arc(elbowX, elbowY, 9, 0, Math.PI * 2);
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(elbowX, elbowY, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // Large Shoulder Joint Ring Node
+      ctx.beginPath();
+      ctx.arc(shoulderX, shoulderY, 11, 0, Math.PI * 2);
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(shoulderX, shoulderY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = colors.line;
+      ctx.fill();
     });
 
     ctx.restore();
