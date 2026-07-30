@@ -145,6 +145,37 @@ class AppController {
         }
       });
     }
+
+    // 4. Exoskeleton Skins Store Cards Update
+    const ownedExoskeletons = userStore.getOwnedExoskeletons();
+    const equippedExoskeleton = userStore.getEquippedExoskeleton();
+
+    const exoGrid = document.querySelector('.exoskeleton-store-grid');
+    if (exoGrid) {
+      const cards = exoGrid.querySelectorAll('.cursor-item-card');
+      cards.forEach(card => {
+        const exoId = card.dataset.exoId;
+        const btn = card.querySelector('.btn-exo-buy');
+        if (!btn) return;
+
+        btn.dataset.exoId = exoId;
+
+        if (equippedExoskeleton === exoId) {
+          btn.textContent = 'EQUIPPED';
+          btn.className = 'btn-exo-buy btn btn-secondary btn-small';
+          btn.disabled = true;
+        } else if (ownedExoskeletons.includes(exoId)) {
+          btn.textContent = 'EQUIP';
+          btn.className = 'btn-exo-buy btn btn-glow btn-small';
+          btn.disabled = false;
+        } else {
+          const price = 400;
+          btn.textContent = `BUY ${price} 🪙`;
+          btn.className = 'btn-exo-buy btn btn-primary btn-small';
+          btn.disabled = false;
+        }
+      });
+    }
   }
 
   bindEvents() {
@@ -178,8 +209,9 @@ class AppController {
         const roomCode = params.get('room');
         if (roomCode && roomCode.length === 6) {
           this.multiplayer.joinRoom(roomCode.toUpperCase());
+          this.ui.showModal(this.ui.mpLobbyModal);
         } else {
-          this.ui.showTutorial();
+          this.ui.showModal(this.ui.tutorialModal);
         }
 
         // Refresh leaderboard active player highlight
@@ -372,7 +404,10 @@ class AppController {
         const buyBtn = e.target.closest('.btn-exo-buy');
         if (!buyBtn || buyBtn.disabled) return;
 
-        const exoId = buyBtn.dataset.exoId;
+        const card = buyBtn.closest('.cursor-item-card');
+        const exoId = buyBtn.dataset.exoId || (card ? card.dataset.exoId : null);
+        if (!exoId) return;
+
         const owned = userStore.getOwnedExoskeletons();
 
         if (owned.includes(exoId)) {
@@ -383,7 +418,7 @@ class AppController {
           if (userStore.buyExoskeleton(exoId, price)) {
             sounds.playCombo();
           } else {
-            alert('Not enough coins! You need 400 coins to unlock this exoskeleton skin.');
+            alert('Not enough coins! You need 400 coins to unlock this exoskeleton skin. Slice fruits to earn more coins!');
           }
         }
         this.updateProfileAndStoreUI();
