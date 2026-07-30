@@ -80,6 +80,8 @@ export class GameManager {
 
     // Spawning & Loop
     this.lastSpawnTime = 0;
+    this.lastBombSpawnTime = 0;
+    this.bombCooldownMs = 5000; // 1 bomb per 5 seconds strictly
     this.animFrameId = null;
 
     // Combo system
@@ -140,6 +142,7 @@ export class GameManager {
     this.slicedHalves = [];
     this.particles = [];
     this.lastSpawnTime = performance.now();
+    this.lastBombSpawnTime = 0;
     this.isPlaying = true;
 
     if (this.gameMode === 'punch-glass') {
@@ -172,6 +175,7 @@ export class GameManager {
     this.slicedHalves = [];
     this.particles = [];
     this.lastSpawnTime = performance.now();
+    this.lastBombSpawnTime = 0;
     this.isPlaying = true;
 
     if (this.gameMode === 'punch-glass') {
@@ -306,8 +310,19 @@ export class GameManager {
     const maxCount = config.burstCount[1];
     const count = minCount + Math.floor(Math.random() * (maxCount - minCount + 1));
 
+    const now = performance.now();
+    const canSpawnBomb = (this.currentLevel !== 'freestyle') && 
+                         (now - this.lastBombSpawnTime >= this.bombCooldownMs);
+
+    let bombSpawnedInBurst = false;
+
     for (let i = 0; i < count; i++) {
-      const isBomb = Math.random() < config.bombChance;
+      let isBomb = false;
+      if (canSpawnBomb && !bombSpawnedInBurst && Math.random() < config.bombChance) {
+        isBomb = true;
+        bombSpawnedInBurst = true;
+        this.lastBombSpawnTime = now;
+      }
       this.fruits.push(this.fruitPool.get(this.canvas.width, config.fallSpeed, isBomb));
     }
   }
