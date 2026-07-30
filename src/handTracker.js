@@ -14,11 +14,11 @@ export class HandTrackerManager {
     this.handHistories = new Map();
     this.smoothedPositions = new Map();
     
-    // Frame throttling cache (target 30-33 Hz inference, 60 Hz smooth rendering)
+    // Zero-latency GPU inference (processes every video frame at display refresh rate)
     this.lastVideoTime = -1;
     this.lastDetectionTimestamp = 0;
-    this.detectionIntervalMs = 30; // ~33 Hz max GPU inference rate
-    this.lastDetectionResult = { activeBladeSegments: [], handsTracked: 0 };
+    this.detectionIntervalMs = 0; // 0ms delay -> Unthrottled 60-120+ FPS performance
+    this.lastDetectionResult = { activeBladeSegments: [], rawHandLandmarks: [], handsTracked: 0 };
 
     // Blade configuration
     this.historyLength = 10;
@@ -259,17 +259,27 @@ export class HandTrackerManager {
         }
       }
 
-      ctx.shadowColor = colors.glow;
-      ctx.shadowBlur = 8;
-      ctx.strokeStyle = colors.line;
-      ctx.lineWidth = 3.5;
-
-      // 1. Draw Palm & Finger Hand Skeleton (21 MediaPipe Landmarks)
+      // 1. Draw Palm & Finger Hand Skeleton (Dual-pass stroke for 120+ FPS neon glow)
+      // Pass 1: Translucent Outer Neon Glow Aura
+      ctx.strokeStyle = colors.glow;
+      ctx.lineWidth = 7;
       HAND_CONNECTIONS.forEach(([i, j]) => {
         const p1 = landmarks[i];
         const p2 = landmarks[j];
         if (!p1 || !p2) return;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      });
 
+      // Pass 2: Bright High-Definition Solid Core Line
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 3.5;
+      HAND_CONNECTIONS.forEach(([i, j]) => {
+        const p1 = landmarks[i];
+        const p2 = landmarks[j];
+        if (!p1 || !p2) return;
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);

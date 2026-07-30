@@ -38,7 +38,7 @@ export const DIFFICULTY_CONFIGS = {
 export class GameManager {
   constructor(canvas, cameraManager, handTrackerManager, uiManager, leaderboardManager) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas.getContext('2d', { desynchronized: true, alpha: false }) || canvas.getContext('2d');
     this.camera = cameraManager;
     this.handTracker = handTrackerManager;
     this.ui = uiManager;
@@ -54,10 +54,11 @@ export class GameManager {
     this.isMultiplayer = false;
     this.onMultiplayerSlice = null;
 
-    // High performance Object Pools
+    // High performance Pre-Warmed Object Pools
     this.fruitPool = new ObjectPool((...args) => new Fruit(...args));
     this.halfPool = new ObjectPool((...args) => new SlicedHalf(...args));
     this.particlePool = new ObjectPool((...args) => new Particle(...args));
+    this.prewarmPools();
 
     // Adaptive Performance Scaling
     this.isLowEndDevice = Boolean((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || window.innerWidth <= 600);
@@ -90,6 +91,22 @@ export class GameManager {
 
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
+  }
+
+  prewarmPools() {
+    try {
+      const warmFruits = [];
+      const warmHalves = [];
+      const warmParticles = [];
+      for (let i = 0; i < 20; i++) {
+        warmFruits.push(this.fruitPool.get(800, 1.0, false));
+        warmHalves.push(this.halfPool.get(400, 400, '🍉', true, '#ff4757', 0, 0));
+        warmParticles.push(this.particlePool.get(400, 400, '#ff4757'));
+      }
+      warmFruits.forEach(f => this.fruitPool.release(f));
+      warmHalves.forEach(h => this.halfPool.release(h));
+      warmParticles.forEach(p => this.particlePool.release(p));
+    } catch (e) {}
   }
 
   initDebugControls() {
