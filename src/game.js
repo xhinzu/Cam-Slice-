@@ -220,14 +220,17 @@ export class GameManager {
     }
 
     // 1. Hand Tracking & Blade Segment Detection
-    const { activeBladeSegments } = this.handTracker.detectHands(
+    const { activeBladeSegments, rawHandLandmarks } = this.handTracker.detectHands(
       this.camera.video,
       timestamp,
       this.canvas.width,
       this.canvas.height
     );
 
-    // 2. Mode Specific Gameplay Logic
+    // 2. Draw AI Hand Exoskeleton Filter (Visual Feature)
+    this.handTracker.drawHandExoskeleton(this.ctx, rawHandLandmarks, userStore.getEquippedExoskeleton());
+
+    // 3. Mode Specific Gameplay Logic
     if (this.gameMode === 'punch-glass') {
       this.punchGlassManager.updateAndDraw(timestamp, activeBladeSegments, dt);
     } else {
@@ -240,7 +243,7 @@ export class GameManager {
       this.updateAndDrawEntities(activeBladeSegments, config, dt);
     }
 
-    // 3. Draw Glowing Blade Trails with Equipped Cursor Style
+    // 4. Draw Glowing Blade Trails with Equipped Cursor Style
     this.handTracker.drawBladeTrails(this.ctx, activeBladeSegments, userStore.getEquippedCursor());
 
     if (this.shakeDuration > 0) {

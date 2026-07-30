@@ -9,6 +9,8 @@ export class UserStoreManager {
     this.coinsKey = 'fruit_slice_coins';
     this.ownedCursorsKey = 'fruit_slice_owned_cursors';
     this.equippedCursorKey = 'fruit_slice_equipped_cursor';
+    this.ownedExoskeletonsKey = 'fruit_slice_owned_exoskeletons';
+    this.equippedExoskeletonKey = 'fruit_slice_equipped_exoskeleton';
     this.avatarKey = 'fruit_slice_avatar';
     this.totalFruitsKey = 'fruit_slice_total_fruits';
     this.totalGlassKey = 'fruit_slice_total_glass';
@@ -30,6 +32,12 @@ export class UserStoreManager {
     }
     if (!localStorage.getItem(this.equippedCursorKey)) {
       localStorage.setItem(this.equippedCursorKey, 'cyan');
+    }
+    if (!localStorage.getItem(this.ownedExoskeletonsKey)) {
+      localStorage.setItem(this.ownedExoskeletonsKey, JSON.stringify(['green', 'goth']));
+    }
+    if (!localStorage.getItem(this.equippedExoskeletonKey)) {
+      localStorage.setItem(this.equippedExoskeletonKey, 'green');
     }
     if (!localStorage.getItem(this.avatarKey)) {
       localStorage.setItem(this.avatarKey, JSON.stringify({ type: 'emoji', value: '🥷' }));
@@ -91,6 +99,36 @@ export class UserStoreManager {
     }
     this.addCoins(-price);
     this.equipCursor(cursorId);
+    return true;
+  }
+
+  getOwnedExoskeletons() {
+    try {
+      return JSON.parse(localStorage.getItem(this.ownedExoskeletonsKey)) || ['green', 'goth'];
+    } catch (e) {
+      return ['green', 'goth'];
+    }
+  }
+
+  getEquippedExoskeleton() {
+    return localStorage.getItem(this.equippedExoskeletonKey) || 'green';
+  }
+
+  equipExoskeleton(exoId) {
+    localStorage.setItem(this.equippedExoskeletonKey, exoId);
+  }
+
+  buyExoskeleton(exoId, price = 400) {
+    const coins = this.getCoins();
+    if (coins < price) return false;
+
+    const owned = this.getOwnedExoskeletons();
+    if (!owned.includes(exoId)) {
+      owned.push(exoId);
+      localStorage.setItem(this.ownedExoskeletonsKey, JSON.stringify(owned));
+    }
+    this.addCoins(-price);
+    this.equipExoskeleton(exoId);
     return true;
   }
 

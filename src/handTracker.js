@@ -80,9 +80,18 @@ export class HandTrackerManager {
     const results = this.handLandmarker.detectForVideo(videoElement, now);
     const activeBladeSegments = [];
     const activeHandIds = new Set();
+    const rawHandLandmarks = [];
 
     if (results.landmarks && results.landmarks.length > 0) {
       results.landmarks.forEach((handLandmarks, handIndex) => {
+        // Convert all 21 3D landmarks to mirrored canvas space for exoskeleton rendering
+        const canvasLandmarks = handLandmarks.map((lm) => ({
+          x: (1 - lm.x) * canvasWidth,
+          y: lm.y * canvasHeight,
+          z: lm.z
+        }));
+        rawHandLandmarks.push(canvasLandmarks);
+
         // Track Index Fingertip (8) and Index DIP (7)
         const indexTip = handLandmarks[8];
         const indexDip = handLandmarks[7];
@@ -162,10 +171,159 @@ export class HandTrackerManager {
 
     this.lastDetectionResult = {
       activeBladeSegments,
+      rawHandLandmarks,
       handsTracked: results.landmarks ? results.landmarks.length : 0
     };
 
     return this.lastDetectionResult;
+  }
+
+  /**
+   * Render AI Hand Exoskeleton filter matching 21 MediaPipe hand landmarks and bone connections.
+   * Purely visual feature - supports green, red, yellow, chroma, and goth monochrome skins.
+   */
+  drawHandExoskeleton(ctx, rawHandLandmarks, equippedSkin = 'green') {
+    if (!rawHandLandmarks || rawHandLandmarks.length === 0) return;
+
+    const HAND_CONNECTIONS = [
+      // Wrist to finger bases
+      [0, 1], [0, 5], [0, 9], [0, 13], [0, 17],
+      // Palm cross-connections (MCP joints)
+      [5, 9], [9, 13], [13, 17],
+      // Thumb
+      [1, 2], [2, 3], [3, 4],
+      // Index finger
+      [5, 6], [6, 7], [7, 8],
+      // Middle finger
+      [9, 10], [10, 11], [11, 12],
+      // Ring finger
+      [13, 14], [14, 15], [15, 16],
+      // Pinky finger
+      [17, 18], [18, 19], [19, 20]
+    ];
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const getSkinColors = (skin) => {
+      const now = performance.now();
+      switch (skin) {
+        case 'red':
+          return { line: '#ff4757', glow: 'rgba(255, 71, 87, 0.6)', joint: '#ffffff', jointBorder: '#ff4757' };
+        case 'yellow':
+          return { line: '#ffa502', glow: 'rgba(255, 165, 2, 0.6)', joint: '#ffffff', jointBorder: '#ffa502' };
+        case 'chroma': {
+          const hue = (now / 10) % 360;
+          const color = `hsl(${hue}, 100%, 60%)`;
+          return { line: color, glow: color, joint: '#ffffff', jointBorder: color };
+        }
+        case 'goth':
+        case 'white':
+          return { line: '#ffffff', glow: 'rgba(255, 255, 255, 0.4)', joint: '#05070c', jointBorder: '#ffffff' };
+        case 'green':
+        default:
+          return { line: '#2ed573', glow: 'rgba(46, 213, 115, 0.6)', joint: '#ffffff', jointBorder: '#2ed573' };
+      }
+    };
+
+    const colors = getSkinColors(equippedSkin);
+
+    rawHandLandmarks.forEach((landmarks) => {
+      if (!landmarks || landmarks.length < 21) return;
+
+      // Calculate hand bounding box for AI HUD visual
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      landmarks.forEach((p) => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      });
+
+      const pad = 16;
+      minX = Math.max(10, minX - pad);
+      minY = Math.max(10, minY - pad);
+      maxX = Math.min(ctx.canvas.width - 10, maxX + pad);
+      maxY = Math.min(ctx.canvas.height - 10, maxY + pad);
+
+      // 1. Draw Minimalist Cyber/AI Bounding Box & HUD Label
+      ctx.strokeStyle = colors.glow;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      ctx.setLineDash([]);
+
+      // Corner Brackets
+      const cornerLen = 10;
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 2.5;
+
+      // Top-Left Corner
+      ctx.beginPath();
+      ctx.moveTo(minX, minY + cornerLen); ctx.lineTo(minX, minY); ctx.lineTo(minX + cornerLen, minY);
+      ctx.stroke();
+
+      // Top-Right Corner
+      ctx.beginPath();
+      ctx.moveTo(maxX - cornerLen, minY); ctx.lineTo(maxX, minY); ctx.lineTo(maxX, minY + cornerLen);
+      ctx.stroke();
+
+      // Bottom-Left Corner
+      ctx.beginPath();
+      ctx.moveTo(minX, maxY - cornerLen); ctx.lineTo(minX, maxY); ctx.lineTo(minX + cornerLen, maxY);
+      ctx.stroke();
+
+      // Bottom-Right Corner
+      ctx.beginPath();
+      ctx.moveTo(maxX - cornerLen, maxY); ctx.lineTo(maxX, maxY); ctx.lineTo(maxX, maxY - cornerLen);
+      ctx.stroke();
+
+      // AI HUD Label Text
+      ctx.font = '900 10px "Fredoka", "Outfit", monospace';
+      ctx.fillStyle = colors.line;
+      ctx.fillText('[AI HAND LANDMARKS]', minX + 4, minY - 6);
+
+      // 2. Draw Skeletal Connections (Bones)
+      ctx.shadowColor = colors.glow;
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 3.5;
+
+      HAND_CONNECTIONS.forEach(([i, j]) => {
+        const p1 = landmarks[i];
+        const p2 = landmarks[j];
+        if (!p1 || !p2) return;
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      });
+
+      // 3. Draw Joint Nodes (Landmark Dots)
+      const fingertipIndices = [4, 8, 12, 16, 20];
+
+      landmarks.forEach((p, idx) => {
+        const isFingertip = fingertipIndices.includes(idx);
+        const radius = isFingertip ? 5.5 : 4;
+
+        // Outer Ring
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = colors.jointBorder;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Inner Core Node
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = isFingertip ? colors.line : colors.joint;
+        ctx.fill();
+      });
+    });
+
+    ctx.restore();
   }
 
   /**

@@ -365,6 +365,31 @@ class AppController {
       });
     }
 
+    // Store Buy / Equip Exoskeleton Skins Handler
+    const exoGrid = document.querySelector('.exoskeleton-store-grid');
+    if (exoGrid) {
+      exoGrid.addEventListener('click', (e) => {
+        const buyBtn = e.target.closest('.btn-exo-buy');
+        if (!buyBtn || buyBtn.disabled) return;
+
+        const exoId = buyBtn.dataset.exoId;
+        const owned = userStore.getOwnedExoskeletons();
+
+        if (owned.includes(exoId)) {
+          userStore.equipExoskeleton(exoId);
+          sounds.playCombo();
+        } else {
+          const price = 400;
+          if (userStore.buyExoskeleton(exoId, price)) {
+            sounds.playCombo();
+          } else {
+            alert('Not enough coins! You need 400 coins to unlock this exoskeleton skin.');
+          }
+        }
+        this.updateProfileAndStoreUI();
+      });
+    }
+
     // Mode Selection Cards (Fruit Slice vs Punch Glass)
     this.ui.modeCards.forEach(card => {
       card.addEventListener('click', () => {
