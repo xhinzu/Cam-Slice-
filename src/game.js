@@ -232,7 +232,7 @@ export class GameManager {
     );
 
     // 2. Draw AI Hand Exoskeleton Filter (Visual Feature)
-    this.handTracker.drawHandExoskeleton(this.ctx, rawHandLandmarks, userStore.getEquippedExoskeleton());
+    this.handTracker.drawHandExoskeleton(this.ctx, rawHandLandmarks, userStore.getEquippedExoskeleton(), this.gameMode);
 
     // 3. Mode Specific Gameplay Logic
     if (this.gameMode === 'punch-glass') {

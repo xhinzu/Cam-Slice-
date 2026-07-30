@@ -126,8 +126,25 @@ export class GlassPane {
     ctx.globalAlpha = opacity;
 
     const isGreen = this.type === 'green';
-    const baseFill = isGreen ? 'rgba(0, 200, 100, 0.25)' : 'rgba(220, 40, 40, 0.25)';
-    const strokeStyle = isGreen ? 'rgba(46, 213, 115, 0.95)' : 'rgba(255, 71, 87, 0.95)';
+    const isBlue = this.type === 'blue';
+    const isRed = this.type === 'red';
+
+    let baseFill = 'rgba(0, 200, 100, 0.22)';
+    let strokeStyle = 'rgba(46, 213, 115, 0.95)';
+    let icon = '🟩';
+    let label = 'RIGHT (GREEN)';
+
+    if (isBlue) {
+      baseFill = 'rgba(0, 120, 255, 0.22)';
+      strokeStyle = 'rgba(59, 130, 246, 0.95)';
+      icon = '🟦';
+      label = 'LEFT (BLUE)';
+    } else if (isRed) {
+      baseFill = 'rgba(220, 40, 40, 0.22)';
+      strokeStyle = 'rgba(255, 71, 87, 0.95)';
+      icon = '🟥';
+      label = 'DANGER';
+    }
 
     // 1. Translucent Frosted Pane Background Fill
     ctx.fillStyle = baseFill;
@@ -153,14 +170,19 @@ export class GlassPane {
 
     // 4. Lifespan Timer Bar at Top
     const barWidth = (this.width - 12) * (1 - progress);
-    ctx.fillStyle = isGreen ? '#2ed573' : '#ff4757';
+    ctx.fillStyle = isGreen ? '#2ed573' : (isBlue ? '#3b82f6' : '#ff4757');
     ctx.fillRect(this.x + 6, this.y + 6, Math.max(0, barWidth), 4);
 
     // 5. Type Icon Indicator
     ctx.font = '36px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(isGreen ? '🟩' : '🟥', this.x + this.width / 2, this.y + this.height / 2);
+    ctx.fillText(icon, this.x + this.width / 2, this.y + this.height / 2 - 6);
+
+    // 6. Hand Rule Text Label
+    ctx.font = 'bold 11px "Fredoka", "Outfit", sans-serif';
+    ctx.fillStyle = isGreen ? '#2ed573' : (isBlue ? '#3b82f6' : '#ff4757');
+    ctx.fillText(label, this.x + this.width / 2, this.y + this.height - 14);
 
     ctx.restore();
   }
@@ -205,46 +227,6 @@ export class PunchTheGlassManager {
     return { gridLeft, gridTop, gridWidth, gridHeight, cellWidth, cellHeight };
   }
 
-  drawCenterIdleZone(bounds) {
-    const { gridLeft, gridTop, cellWidth, cellHeight } = bounds;
-    const centerCol = 1;
-    const centerRow = 1;
-
-    const x = gridLeft + centerCol * cellWidth + 6;
-    const y = gridTop + centerRow * cellHeight + 6;
-    const w = cellWidth - 12;
-    const h = cellHeight - 12;
-
-    this.ctx.save();
-
-    // 1. Shaded Idle Safe Zone Fill
-    const gradient = this.ctx.createLinearGradient(x, y, x + w, y + h);
-    gradient.addColorStop(0, 'rgba(0, 242, 254, 0.12)');
-    gradient.addColorStop(1, 'rgba(79, 172, 254, 0.05)');
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(x, y, w, h);
-
-    // 2. Glowing Safe Border Line
-    this.ctx.strokeStyle = 'rgba(0, 242, 254, 0.6)';
-    this.ctx.lineWidth = 2.5;
-    this.ctx.setLineDash([8, 6]);
-    this.ctx.strokeRect(x, y, w, h);
-
-    // 3. Center Icon & Text Label
-    this.ctx.font = '22px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('🛡️', x + w / 2, y + h / 2 - 12);
-
-    this.ctx.font = 'bold 12px "Fredoka", "Outfit", sans-serif';
-    this.ctx.fillStyle = 'rgba(0, 242, 254, 0.95)';
-    this.ctx.shadowColor = 'rgba(0, 242, 254, 0.8)';
-    this.ctx.shadowBlur = 10;
-    this.ctx.fillText('IDLE ZONE', x + w / 2, y + h / 2 + 14);
-
-    this.ctx.restore();
-  }
-
   drawGridLines(bounds) {
     const { gridLeft, gridTop, gridWidth, gridHeight, cellWidth, cellHeight } = bounds;
     this.ctx.save();
@@ -274,19 +256,16 @@ export class PunchTheGlassManager {
     }
 
     this.ctx.restore();
-
-    // Draw Shaded Center Idle Zone
-    this.drawCenterIdleZone(bounds);
   }
 
   updateAndDraw(timestamp, bladeSegments, dt = 1.0) {
     const bounds = this.getGridBounds();
     const config = PUNCH_GLASS_CONFIGS[this.game.currentLevel] || PUNCH_GLASS_CONFIGS.medium;
 
-    // 1. Draw Faint 3x3 Grid Lines & Center Idle Zone
+    // 1. Draw Faint 3x3 Grid Lines
     this.drawGridLines(bounds);
 
-    // 2. Spawn Glass Panes in Random Empty Outer Cells (Excluding Center Index 4)
+    // 2. Spawn Glass Panes in Random Empty Cells (All 9 Cells Active)
     if (timestamp - this.lastSpawnTime > config.spawnInterval) {
       this.spawnPane(bounds, config);
       this.lastSpawnTime = timestamp;
@@ -296,17 +275,17 @@ export class PunchTheGlassManager {
     for (let i = this.panes.length - 1; i >= 0; i--) {
       const pane = this.panes[i];
 
-      // Check if green pane expired naturally (no penalty for green miss)
+      // Check if pane expired naturally
       if (pane.isExpired(timestamp)) {
         this.panes.splice(i, 1);
         continue;
       }
 
-      // Check punch gesture collision
+      // Check punch gesture collision with Hand Color Matching Rule
       if (!pane.punched) {
         let isPunched = false;
         for (const segment of bladeSegments) {
-          if (segment.isSlicing || segment.velocity >= 0.3) {
+          if (segment.isSlicing || segment.velocity >= 0.25) {
             // Check if fingertip point (x2, y2) or segment falls inside pane bounding box
             if (
               segment.x2 >= pane.x &&
@@ -314,8 +293,24 @@ export class PunchTheGlassManager {
               segment.y2 >= pane.y &&
               segment.y2 <= pane.y + pane.height
             ) {
-              isPunched = true;
-              break;
+              const hLabel = (segment.handedness || '').toLowerCase();
+              const isLeft = hLabel.includes('left');
+              const isRight = hLabel.includes('right');
+
+              // Color Matching Rule:
+              // Blue pane 🟦 -> ONLY Left Hand can break
+              // Green pane 🟩 -> ONLY Right Hand can break
+              // Red pane 🟥 -> Either Hand triggers danger penalty
+              if (pane.type === 'blue' && isLeft) {
+                isPunched = true;
+                break;
+              } else if (pane.type === 'green' && isRight) {
+                isPunched = true;
+                break;
+              } else if (pane.type === 'red') {
+                isPunched = true;
+                break;
+              }
             }
           }
         }
@@ -343,11 +338,10 @@ export class PunchTheGlassManager {
   spawnPane(bounds, config) {
     if (this.panes.length >= config.maxPanes) return;
 
-    // Find unoccupied cell indices from the 8 outer cells (EXCLUDING CENTER INDEX 4)
+    // Find unoccupied cell indices from ALL 9 cells (0 to 8)
     const occupiedCells = new Set(this.panes.map(p => p.cellIndex));
     const emptyCells = [];
     for (let i = 0; i < 9; i++) {
-      if (i === 4) continue; // Skip center cell (Index 4) -> Reserved as IDLE ZONE
       if (!occupiedCells.has(i)) emptyCells.push(i);
     }
 
@@ -362,8 +356,12 @@ export class PunchTheGlassManager {
     const w = bounds.cellWidth - 12;
     const h = bounds.cellHeight - 12;
 
-    const isRed = (Math.random() < config.redChance) && this.game.currentLevel !== 'freestyle';
-    const type = isRed ? 'red' : 'green';
+    let type = 'green';
+    if ((Math.random() < config.redChance) && this.game.currentLevel !== 'freestyle') {
+      type = 'red';
+    } else {
+      type = Math.random() < 0.5 ? 'blue' : 'green';
+    }
 
     this.panes.push(new GlassPane(cellIndex, row, col, x, y, w, h, type, config.lifespan));
   }
@@ -376,7 +374,9 @@ export class PunchTheGlassManager {
 
     const centerX = pane.x + pane.width / 2;
     const centerY = pane.y + pane.height / 2;
-    const shardColor = pane.type === 'green' ? 'rgba(46, 213, 115, 0.85)' : 'rgba(255, 71, 87, 0.85)';
+    let shardColor = 'rgba(46, 213, 115, 0.85)';
+    if (pane.type === 'blue') shardColor = 'rgba(59, 130, 246, 0.85)';
+    if (pane.type === 'red') shardColor = 'rgba(255, 71, 87, 0.85)';
 
     // Spawn 22 Glass Shard Particles
     for (let i = 0; i < 22; i++) {
@@ -385,8 +385,8 @@ export class PunchTheGlassManager {
       }
     }
 
-    if (pane.type === 'green') {
-      // Safe Green Hit -> Score & Heart Gain Counter!
+    if (pane.type === 'green' || pane.type === 'blue') {
+      // Safe Green or Blue Hit -> Score & Heart Gain Counter!
       this.game.score++;
       userStore.recordGlassPunch();
       this.game.registerHit();

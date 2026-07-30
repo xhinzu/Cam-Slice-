@@ -90,7 +90,15 @@ export class HandTrackerManager {
           y: lm.y * canvasHeight,
           z: lm.z
         }));
-        rawHandLandmarks.push(canvasLandmarks);
+        
+        const handednessLabel = (results.handedness && results.handedness[handIndex] && results.handedness[handIndex][0])
+          ? results.handedness[handIndex][0].categoryName
+          : `hand_${handIndex}`;
+
+        rawHandLandmarks.push({
+          landmarks: canvasLandmarks,
+          handedness: handednessLabel
+        });
 
         // Track Index Fingertip (8) and Index DIP (7)
         const indexTip = handLandmarks[8];
@@ -108,9 +116,6 @@ export class HandTrackerManager {
         }
 
         const now = performance.now();
-        const handednessLabel = (results.handedness && results.handedness[handIndex] && results.handedness[handIndex][0])
-          ? results.handedness[handIndex][0].categoryName
-          : `hand_${handIndex}`;
         const handKey = `hand_${handednessLabel}`;
         activeHandIds.add(handKey);
 
@@ -150,6 +155,7 @@ export class HandTrackerManager {
 
           activeBladeSegments.push({
             handId: handKey,
+            handedness: handednessLabel,
             x1: prev.x,
             y1: prev.y,
             x2: curr.x,
@@ -185,7 +191,7 @@ export class HandTrackerManager {
    * Render AI Hand Exoskeleton filter matching 21 MediaPipe hand landmarks and bone connections.
    * Purely visual feature - supports green, red, yellow, chroma, and goth monochrome skins.
    */
-  drawHandExoskeleton(ctx, rawHandLandmarks, equippedSkin = 'green') {
+  drawHandExoskeleton(ctx, rawHandLandmarks, equippedSkin = 'green', gameMode = 'fruit-slice') {
     if (!rawHandLandmarks || rawHandLandmarks.length === 0) return;
 
     const HAND_CONNECTIONS = [
@@ -230,10 +236,28 @@ export class HandTrackerManager {
       }
     };
 
-    const colors = getSkinColors(equippedSkin);
+    const defaultColors = getSkinColors(equippedSkin);
 
-    rawHandLandmarks.forEach((landmarks) => {
+    rawHandLandmarks.forEach((item) => {
+      const landmarks = item.landmarks || item;
+      const handedness = item.handedness || '';
       if (!landmarks || landmarks.length < 21) return;
+
+      let colors = defaultColors;
+      let labelText = '';
+
+      if (gameMode === 'punch-glass') {
+        const isLeft = handedness.toLowerCase().includes('left');
+        if (isLeft) {
+          // Left Hand = Blue Exoskeleton
+          colors = { line: '#3b82f6', glow: 'rgba(59, 130, 246, 0.8)', joint: '#ffffff', jointBorder: '#3b82f6' };
+          labelText = 'LEFT HAND 🟦';
+        } else {
+          // Right Hand = Green Exoskeleton
+          colors = { line: '#2ed573', glow: 'rgba(46, 213, 115, 0.8)', joint: '#ffffff', jointBorder: '#2ed573' };
+          labelText = 'RIGHT HAND 🟩';
+        }
+      }
 
       ctx.shadowColor = colors.glow;
       ctx.shadowBlur = 8;
@@ -272,6 +296,15 @@ export class HandTrackerManager {
         ctx.fillStyle = isFingertip ? colors.line : colors.joint;
         ctx.fill();
       });
+
+      // Optional Hand Label in Punch Glass mode
+      if (labelText) {
+        const wrist = landmarks[0];
+        ctx.font = '900 11px "Fredoka", "Outfit", sans-serif';
+        ctx.fillStyle = colors.line;
+        ctx.textAlign = 'center';
+        ctx.fillText(labelText, wrist.x, wrist.y + 24);
+      }
     });
 
     ctx.restore();
