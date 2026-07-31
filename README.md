@@ -6,7 +6,7 @@ The player sees themselves live on camera as the game arena. Fruits and bombs fa
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Features 🌟
 
 - 🖐️ **Real-Time Index Finger Tracking**: Powered client-side by Google MediaPipe HandLandmarker. Supports dual hands with automatic camera horizontal mirroring.
 - ⚡ **Enhanced Gesture Accuracy**: Exponential position smoothing (EMA), multi-joint finger blade vectors, tuned velocity thresholding, and glowing neon trail flare effects.
